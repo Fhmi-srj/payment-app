@@ -20,11 +20,20 @@ function Kasir() {
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [activeCards, setActiveCards] = useState({});
     const [cardValues, setCardValues] = useState({});
-    const [activeTab, setActiveTab] = useState('syahriyah');
+    
+    // Load tagihan settings from localStorage
+    const tagihanSettings = JSON.parse(localStorage.getItem('tagihan_settings') || '{}');
+    const showSyahriyah = !tagihanSettings['syahriyah'] || tagihanSettings['syahriyah'].aktif !== false;
+    const showSpp = !tagihanSettings['sekolah'] || tagihanSettings['sekolah'].aktif !== false;
+    const initialTab = showSyahriyah ? 'syahriyah' : (showSpp ? 'spp' : '');
+    
+    const [activeTab, setActiveTab] = useState(initialTab);
     const [metode, setMetode] = useState('Cash');
     const [showShortcuts, setShowShortcuts] = useState(false);
     const sugRef = useRef(null);
     const searchInputRef = useRef(null);
+    
+    const activeProducts = baseProducts.filter(p => !tagihanSettings[p.key] || tagihanSettings[p.key].aktif !== false);
 
     useEffect(() => {
         const handler = (e) => { if (sugRef.current && !sugRef.current.contains(e.target)) setShowSuggestions(false); };
@@ -291,9 +300,13 @@ function Kasir() {
                         <h2 className="text-base font-semibold text-gray-800 mb-3 pb-2 border-b">
                             <i className="fas fa-receipt mr-2 text-green-600"></i>Tagihan Tambahan
                         </h2>
-                        <div className="grid grid-cols-2 gap-2">
-                            {baseProducts.map(p => renderProductCard(p.key, p.label, p.icon, 'tambahan'))}
-                        </div>
+                        {activeProducts.length === 0 ? (
+                            <p className="text-xs text-gray-400 italic mt-4 text-center">Semua tagihan tambahan non-aktif.</p>
+                        ) : (
+                            <div className="grid grid-cols-2 gap-2">
+                                {activeProducts.map(p => renderProductCard(p.key, p.label, p.icon, 'tambahan'))}
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -303,26 +316,36 @@ function Kasir() {
                         <h2 className="text-base font-semibold text-gray-800 mb-3 pb-2 border-b">
                             <i className="fas fa-calendar-alt mr-2 text-green-600"></i>Tagihan Bulanan
                         </h2>
-                        {/* Tab Switch */}
-                        <div className={`taeb-switch flex bg-[#d1fae5] rounded-lg p-1 relative mb-3 ${activeTab === 'spp' ? 'right' : 'left'}`}>
-                            <div className={`taeb flex-1 text-center py-2 px-4 cursor-pointer font-semibold text-xs rounded-md relative z-[1] transition-colors ${activeTab === 'syahriyah' ? 'text-white' : 'text-[#15803d]'}`}
-                                onClick={() => setActiveTab('syahriyah')}>
-                                <i className="fas fa-mosque mr-1"></i>SYAHRIYAH
-                            </div>
-                            <div className={`taeb flex-1 text-center py-2 px-4 cursor-pointer font-semibold text-xs rounded-md relative z-[1] transition-colors ${activeTab === 'spp' ? 'text-white' : 'text-[#15803d]'}`}
-                                onClick={() => setActiveTab('spp')}>
-                                <i className="fas fa-school mr-1"></i>SPP SEKOLAH
-                            </div>
-                        </div>
-                        {activeTab === 'syahriyah' && (
-                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                                {bulan.map((_, idx) => renderMonthCard('syahriyah', idx))}
-                            </div>
-                        )}
-                        {activeTab === 'spp' && (
-                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                                {bulan.map((_, idx) => renderMonthCard('sekolah', idx))}
-                            </div>
+                        {(!showSyahriyah && !showSpp) ? (
+                            <p className="text-xs text-gray-400 italic mt-4 text-center">Tagihan bulanan saat ini dinonaktifkan.</p>
+                        ) : (
+                            <>
+                                {/* Tab Switch */}
+                                <div className={`taeb-switch flex bg-[#d1fae5] rounded-lg p-1 relative mb-3 ${activeTab === 'spp' ? 'right' : 'left'}`}>
+                                    {showSyahriyah && (
+                                        <div className={`taeb flex-1 text-center py-2 px-4 cursor-pointer font-semibold text-xs rounded-md relative z-[1] transition-colors ${activeTab === 'syahriyah' ? 'text-white' : 'text-[#15803d]'}`}
+                                            onClick={() => setActiveTab('syahriyah')}>
+                                            <i className="fas fa-mosque mr-1"></i>SYAHRIYAH
+                                        </div>
+                                    )}
+                                    {showSpp && (
+                                        <div className={`taeb flex-1 text-center py-2 px-4 cursor-pointer font-semibold text-xs rounded-md relative z-[1] transition-colors ${activeTab === 'spp' ? 'text-white' : 'text-[#15803d]'}`}
+                                            onClick={() => setActiveTab('spp')}>
+                                            <i className="fas fa-school mr-1"></i>SPP SEKOLAH
+                                        </div>
+                                    )}
+                                </div>
+                                {activeTab === 'syahriyah' && showSyahriyah && (
+                                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                        {bulan.map((_, idx) => renderMonthCard('syahriyah', idx))}
+                                    </div>
+                                )}
+                                {activeTab === 'spp' && showSpp && (
+                                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                        {bulan.map((_, idx) => renderMonthCard('sekolah', idx))}
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>

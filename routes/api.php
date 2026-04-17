@@ -41,6 +41,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('tahun-ajaran/{tahunAjaran}/set-active', [TahunAjaranController::class, 'setActive']);
 
     // Santri (Data Induk)
+    Route::post('santri/bulk-tagihan', [SantriController::class, 'bulkUpdateTagihan']);
     Route::apiResource('santri', SantriController::class);
     Route::post('santri/import', [SantriController::class, 'import']);
     Route::get('santri-export', [SantriController::class, 'export']);

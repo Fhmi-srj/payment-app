@@ -173,6 +173,36 @@ class SantriController extends Controller
         ]);
     }
 
+    public function bulkUpdateTagihan(Request $request)
+    {
+        $request->validate([
+            'settings' => 'required|array'
+        ]);
+
+        $updatedCount = 0;
+        foreach ($request->settings as $key => $data) {
+            $nominal = intval($data['nominal'] ?? 0);
+            $aktif = filter_var($data['aktif'] ?? true, FILTER_VALIDATE_BOOLEAN);
+
+            // Valid fields in DB
+            $validFields = ['daftar_ulang', 'syahriyah', 'haflah', 'seragam', 'study_tour', 'sekolah', 'kartu_santri'];
+            
+            if (in_array($key, $validFields) && $aktif && $nominal >= 0) {
+                // Update tagihan yang lebih besar dari nominal baru
+                // "jika tagihan awal kurang dari nominal baru maka tidak berubah"
+                $count = Santri::where($key, '>', $nominal)->update([$key => $nominal]);
+                $updatedCount += $count;
+            }
+        }
+
+        ActivityLog::log('updated', "Melakukan update massal penyesuaian nominal tagihan default");
+
+        return response()->json([
+            'success' => true,
+            'message' => "Update massal berhasil disinkronisasi ke data santri",
+        ]);
+    }
+
     public function import(Request $request)
     {
         $request->validate([

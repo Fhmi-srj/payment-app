@@ -215,27 +215,120 @@ function ProfilPondok() {
 }
 
 function JenisTagihan() {
+    const [tagihanSettings, setTagihanSettings] = useState({});
+    const [saved, setSaved] = useState(false);
+
+    useEffect(() => {
+        const savedData = localStorage.getItem('tagihan_settings');
+        if (savedData) {
+            setTagihanSettings(JSON.parse(savedData));
+        } else {
+            // Ambil dari prev storage jika ada
+            const oldNominals = JSON.parse(localStorage.getItem('nominal_default_tagihan') || '{}');
+            const initial = {};
+            defaultTagihan.forEach(item => {
+                initial[item.key] = {
+                    nominal: oldNominals[item.key] || '',
+                    aktif: true
+                };
+            });
+            setTagihanSettings(initial);
+        }
+    }, []);
+
+    const handleChange = (key, field, value) => {
+        setTagihanSettings(prev => ({
+            ...prev,
+            [key]: {
+                ...prev[key],
+                [field]: value
+            }
+        }));
+    };
+
+    const handleSave = async () => {
+        const result = await Swal.fire({
+            title: 'Terapkan Perubahan?',
+            text: 'Ini akan menyimpan pengaturan, dan menyinkronkan nominal ke SELURUH DATA SANTRI SAAT INI (jika tagihan awal mereka > nominal baru, akan disesuaikan menjadi nominal baru. Jika lebih kecil/sudah lunas, tidak berubah).',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#16a34a',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Ya, Simpan & Terapkan!'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                const res = await authFetch(`${API_BASE}/santri/bulk-tagihan`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ settings: tagihanSettings })
+                });
+
+                const json = await res.json();
+                if (json.success) {
+                    localStorage.setItem('tagihan_settings', JSON.stringify(tagihanSettings));
+                    setSaved(true);
+                    Swal.fire({ 
+                        icon: 'success', 
+                        title: 'Berhasil!', 
+                        text: 'Nominal berhasil dijadwalkan dan disinkronisasi dengan Data Induk.', 
+                        timer: 2000, 
+                        showConfirmButton: false 
+                    });
+                    setTimeout(() => setSaved(false), 2000);
+                } else {
+                    Swal.fire('Gagal', json.message || 'Gagal menyinkronisasi tagihan', 'error');
+                }
+            } catch (error) {
+                Swal.fire('Error', 'Terjadi kesalahan koneksi ke server', 'error');
+            }
+        }
+    };
+
     return (
         <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-sm font-semibold text-gray-800 mb-4"><i className="fas fa-list mr-2 text-green-600"></i>Jenis Tagihan Aktif</h2>
-            <p className="text-xs text-gray-500 mb-4">Daftar jenis tagihan yang tersedia di sistem.</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {defaultTagihan.map(item => (
-                    <div key={item.key} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-green-300 transition-colors">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                                <i className={`${item.icon} text-green-600`}></i>
+            <h2 className="text-sm font-semibold text-gray-800 mb-4"><i className="fas fa-list mr-2 text-green-600"></i>Jenis & Nominal Default Tagihan</h2>
+            <p className="text-xs text-gray-500 mb-4">Daftar jenis tagihan beserta nominal default yang akan digunakan sebagai basis tagihan bagi semua santri.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {defaultTagihan.map(item => {
+                    const setting = tagihanSettings[item.key] || { aktif: true, nominal: '' };
+                    return (
+                        <div key={item.key} className={`flex flex-col gap-3 p-4 rounded-lg border transition-colors ${setting.aktif ? 'bg-gray-50 border-gray-200 hover:border-green-300' : 'bg-gray-100 border-gray-200 opacity-60'}`}>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${setting.aktif ? 'bg-green-100' : 'bg-gray-200'}`}>
+                                        <i className={`${item.icon} ${setting.aktif ? 'text-green-600' : 'text-gray-400'}`}></i>
+                                    </div>
+                                    <div>
+                                        <div className={`text-sm font-medium ${setting.aktif ? 'text-gray-700' : 'text-gray-500'}`}>{item.label}</div>
+                                        <div className="text-[10px] text-gray-400">Field: {item.key}</div>
+                                    </div>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" checked={setting.aktif} onChange={(e) => handleChange(item.key, 'aktif', e.target.checked)} className="sr-only peer" />
+                                    <div className="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:bg-green-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+                                </label>
                             </div>
                             <div>
-                                <div className="text-sm font-medium text-gray-700">{item.label}</div>
-                                <div className="text-[10px] text-gray-400">Field: {item.key}</div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Nominal Default (Rp)</label>
+                                <input 
+                                    type="number" 
+                                    value={setting.nominal} 
+                                    onChange={(e) => handleChange(item.key, 'nominal', e.target.value)}
+                                    disabled={!setting.aktif}
+                                    className={`w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${!setting.aktif && 'bg-gray-100'}`}
+                                    placeholder={`Contoh nominal ${item.label.toLowerCase()}`}
+                                />
                             </div>
                         </div>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700">
-                            <i className="fas fa-check-circle mr-1 text-[8px]"></i>Aktif
-                        </span>
-                    </div>
-                ))}
+                    );
+                })}
+            </div>
+            <div className="flex justify-end">
+                <button onClick={handleSave} className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 shadow flex items-center transition">
+                    <i className="fas fa-save mr-2"></i>Simpan Perubahan
+                </button>
             </div>
         </div>
     );

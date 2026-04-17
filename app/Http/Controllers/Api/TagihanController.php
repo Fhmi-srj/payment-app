@@ -11,10 +11,10 @@ class TagihanController extends Controller
 {
     public function index(Request $request)
     {
-        $moneyFields = ['daftar_ulang', 'syahriyah', 'haflah', 'seragam', 'study_tour', 'sekolah', 'kartu_santri'];
+        $moneyFields = ['daftar_ulang', 'syahriyah', 'haflah', 'seragam', 'study_tour', 'kartu_santri'];
 
         $query = Santri::where('status', 'AKTIF')
-            ->select('*', DB::raw('(daftar_ulang + syahriyah + haflah + seragam + study_tour + sekolah + kartu_santri) as total_tagihan'));
+            ->select('*', DB::raw('(daftar_ulang + syahriyah + haflah + seragam + study_tour + kartu_santri) as total_tagihan'));
 
         // Filter lembaga
         if ($request->filled('lembaga')) {
@@ -62,7 +62,6 @@ class TagihanController extends Controller
             'haflah' => 'Haflah',
             'seragam' => 'Seragam',
             'study_tour' => 'Study Tour',
-            'sekolah' => 'Sekolah',
             'kartu_santri' => 'Kartu Santri',
         ];
 
@@ -108,7 +107,7 @@ class TagihanController extends Controller
 
     public function summary()
     {
-        $moneyFields = ['daftar_ulang', 'syahriyah', 'haflah', 'seragam', 'study_tour', 'sekolah', 'kartu_santri'];
+        $moneyFields = ['daftar_ulang', 'syahriyah', 'haflah', 'seragam', 'study_tour', 'kartu_santri'];
         $aktif = Santri::where('status', 'AKTIF');
 
         $totalSantri = (clone $aktif)->count();
@@ -167,7 +166,7 @@ class TagihanController extends Controller
             $query->where('kelas', $request->kelas);
         }
         if ($request->filled('status_bayar')) {
-            $moneyFields = ['daftar_ulang', 'syahriyah', 'haflah', 'seragam', 'study_tour', 'sekolah', 'kartu_santri'];
+            $moneyFields = ['daftar_ulang', 'syahriyah', 'haflah', 'seragam', 'study_tour', 'kartu_santri'];
             if ($request->status_bayar === 'lunas') {
                 foreach ($moneyFields as $f) {
                     $query->where($f, '<=', 0);
@@ -203,7 +202,7 @@ class TagihanController extends Controller
             $paidMap[$pm->santri_id][$pm->bulan] = (int) $pm->total_paid;
         }
 
-        $perBulan = 600000; // Syahriyah per month
+        $perBulan = $request->filled('nominal_syahriyah') ? (int) $request->nominal_syahriyah : 400000;
 
         $reportData = $santris->map(function ($s) use ($paidMap, $perBulan) {
             $months = [];

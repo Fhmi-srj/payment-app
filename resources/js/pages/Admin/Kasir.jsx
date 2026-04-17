@@ -24,10 +24,6 @@ function Kasir() {
     // Load tagihan settings from localStorage
     const tagihanSettings = JSON.parse(localStorage.getItem('tagihan_settings') || '{}');
     const showSyahriyah = !tagihanSettings['syahriyah'] || tagihanSettings['syahriyah'].aktif !== false;
-    const showSpp = !tagihanSettings['sekolah'] || tagihanSettings['sekolah'].aktif !== false;
-    const initialTab = showSyahriyah ? 'syahriyah' : (showSpp ? 'spp' : '');
-    
-    const [activeTab, setActiveTab] = useState(initialTab);
     const [metode, setMetode] = useState('Cash');
     const [showShortcuts, setShowShortcuts] = useState(false);
     const sugRef = useRef(null);
@@ -116,7 +112,8 @@ function Kasir() {
                 if (parts.length === 1) {
                     setCardValues(v => ({ ...v, [cardKey]: getTagihan(cardKey).toLocaleString('id-ID') }));
                 } else {
-                    const perBulan = parts[0] === 'syahriyah' ? 600000 : 50000;
+                    const pk = parts[0];
+                    const perBulan = (tagihanSettings[pk] && tagihanSettings[pk].nominal) ? Number(tagihanSettings[pk].nominal) : (pk === 'syahriyah' ? 400000 : 0);
                     setCardValues(v => ({ ...v, [cardKey]: perBulan.toLocaleString('id-ID') }));
                 }
             }
@@ -141,7 +138,7 @@ function Kasir() {
             if (parts.length === 1) {
                 label = baseProducts.find(p => p.key === cardKey)?.label || cardKey;
             } else {
-                label = `${parts[0] === 'syahriyah' ? 'Syahriyah' : 'SPP'} ${bulan[parseInt(parts[1])]}`;
+                label = `Syahriyah ${bulan[parseInt(parts[1])]}`;
             }
             items.push({ key: cardKey, label, nominal, produk: parts[0], bulan: parts.length > 1 ? parseInt(parts[1]) : null });
         });
@@ -202,7 +199,7 @@ function Kasir() {
                 {icon && <i className={`${icon} ${active ? 'text-[#16a34a]' : 'text-gray-400'} text-lg mb-1`}></i>}
                 <span className="text-xs font-medium mb-1">{label}</span>
                 <div className={`text-xs font-semibold tagihan-amount ${noSantri ? 'text-gray-400' : lunas ? 'text-green-600' : 'text-red-600'}`}>
-                    {noSantri ? '-' : lunas ? 'LUNAS' : formatIDR(type === 'tambahan' ? tagihan : (key === 'syahriyah' ? 600000 : 50000))}
+                    {noSantri ? '-' : lunas ? 'LUNAS' : formatIDR(type === 'tambahan' ? tagihan : (key === 'syahriyah' ? (tagihanSettings[key]?.nominal ? Number(tagihanSettings[key].nominal) : 400000) : 0))}
                 </div>
                 <input type="text" inputMode="numeric"
                     className="w-full text-center rounded px-1 py-1 bg-gray-100 border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-green-500 mt-1"
@@ -219,7 +216,7 @@ function Kasir() {
     const renderMonthCard = (produkKey, monthIdx) => {
         const noSantri = !selectedSantri;
         const lunas = !noSantri && isLunas(produkKey);
-        const perBulan = produkKey === 'syahriyah' ? 600000 : 50000;
+        const perBulan = (tagihanSettings[produkKey] && tagihanSettings[produkKey].nominal) ? Number(tagihanSettings[produkKey].nominal) : (produkKey === 'syahriyah' ? 400000 : 0);
         const cardKey = `${produkKey}-${monthIdx}`;
         const active = activeCards[cardKey];
         const disabled = noSantri || lunas;
@@ -316,33 +313,13 @@ function Kasir() {
                         <h2 className="text-base font-semibold text-gray-800 mb-3 pb-2 border-b">
                             <i className="fas fa-calendar-alt mr-2 text-green-600"></i>Tagihan Bulanan
                         </h2>
-                        {(!showSyahriyah && !showSpp) ? (
+                        {(!showSyahriyah) ? (
                             <p className="text-xs text-gray-400 italic mt-4 text-center">Tagihan bulanan saat ini dinonaktifkan.</p>
                         ) : (
                             <>
-                                {/* Tab Switch */}
-                                <div className={`taeb-switch flex bg-[#d1fae5] rounded-lg p-1 relative mb-3 ${activeTab === 'spp' ? 'right' : 'left'}`}>
-                                    {showSyahriyah && (
-                                        <div className={`taeb flex-1 text-center py-2 px-4 cursor-pointer font-semibold text-xs rounded-md relative z-[1] transition-colors ${activeTab === 'syahriyah' ? 'text-white' : 'text-[#15803d]'}`}
-                                            onClick={() => setActiveTab('syahriyah')}>
-                                            <i className="fas fa-mosque mr-1"></i>SYAHRIYAH
-                                        </div>
-                                    )}
-                                    {showSpp && (
-                                        <div className={`taeb flex-1 text-center py-2 px-4 cursor-pointer font-semibold text-xs rounded-md relative z-[1] transition-colors ${activeTab === 'spp' ? 'text-white' : 'text-[#15803d]'}`}
-                                            onClick={() => setActiveTab('spp')}>
-                                            <i className="fas fa-school mr-1"></i>SPP SEKOLAH
-                                        </div>
-                                    )}
-                                </div>
-                                {activeTab === 'syahriyah' && showSyahriyah && (
+                                {showSyahriyah && (
                                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                                         {bulan.map((_, idx) => renderMonthCard('syahriyah', idx))}
-                                    </div>
-                                )}
-                                {activeTab === 'spp' && showSpp && (
-                                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                                        {bulan.map((_, idx) => renderMonthCard('sekolah', idx))}
                                     </div>
                                 )}
                             </>

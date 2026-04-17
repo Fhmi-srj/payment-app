@@ -4,8 +4,8 @@ import Swal from 'sweetalert2';
 import Modal from '../../components/Modal';
 import Pagination, { ITEMS_PER_PAGE_DEFAULT } from '../../components/Pagination';
 
-const moneyFields = ['daftar_ulang', 'syahriyah', 'haflah', 'seragam', 'study_tour', 'sekolah', 'kartu_santri'];
-const moneyLabels = { daftar_ulang: 'Daftar Ulang', syahriyah: 'Syahriyah', haflah: 'Haflah', seragam: 'Seragam', study_tour: 'Study Tour', sekolah: 'Sekolah', kartu_santri: 'Kartu Santri' };
+const moneyFields = ['daftar_ulang', 'syahriyah', 'haflah', 'seragam', 'study_tour', 'kartu_santri'];
+const moneyLabels = { daftar_ulang: 'Daftar Ulang', syahriyah: 'Syahriyah', haflah: 'Haflah', seragam: 'Seragam', study_tour: 'Study Tour', kartu_santri: 'Kartu Santri' };
 
 
 
@@ -17,8 +17,15 @@ function DataInduk() {
     const [sortDir, setSortDir] = useState('asc');
     const [filterStatus, setFilterStatus] = useState('');
     const [filterLembaga, setFilterLembaga] = useState('');
+    const [filterYayasan, setFilterYayasan] = useState('');
+    const [filterKelas, setFilterKelas] = useState('');
+    const [filterJenisKelamin, setFilterJenisKelamin] = useState('');
+    
     const [showStatusFilter, setShowStatusFilter] = useState(false);
     const [showLembagaFilter, setShowLembagaFilter] = useState(false);
+    const [showYayasanFilter, setShowYayasanFilter] = useState(false);
+    const [showKelasFilter, setShowKelasFilter] = useState(false);
+    const [showJkFilter, setShowJkFilter] = useState(false);
     const [expandedRows, setExpandedRows] = useState(new Set());
     const [modalOpen, setModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState('add');
@@ -35,6 +42,9 @@ function DataInduk() {
             const params = new URLSearchParams();
             if (search) params.append('search', search);
             if (filterLembaga) params.append('lembaga', filterLembaga);
+            if (filterYayasan) params.append('yayasan', filterYayasan);
+            if (filterKelas) params.append('kelas', filterKelas);
+            if (filterJenisKelamin) params.append('jenis_kelamin', filterJenisKelamin);
             if (filterStatus) params.append('status', filterStatus);
             if (sortCol) { params.append('sort_by', sortCol); params.append('sort_dir', sortDir); }
             const res = await authFetch(`${API_BASE}/santri?${params}`);
@@ -42,12 +52,12 @@ function DataInduk() {
             setData(json.data || []);
         } catch (e) { console.error(e); }
         finally { setLoading(false); }
-    }, [search, filterLembaga, filterStatus, sortCol, sortDir]);
+    }, [search, filterLembaga, filterYayasan, filterKelas, filterJenisKelamin, filterStatus, sortCol, sortDir]);
 
     useEffect(() => { loadData(); }, [loadData]);
 
     // Reset page when filters change
-    useEffect(() => { setCurrentPage(1); }, [search, filterLembaga, filterStatus]);
+    useEffect(() => { setCurrentPage(1); }, [search, filterLembaga, filterYayasan, filterKelas, filterJenisKelamin, filterStatus]);
 
     // Pagination calculations
     const totalPages = Math.ceil(data.length / itemsPerPage);
@@ -78,7 +88,7 @@ function DataInduk() {
 
     const openModal = (mode, item = null) => {
         setModalMode(mode);
-        setEditItem(item || { lembaga: 'MTS', nama: '', kelas: '', alamat: '', daftar_ulang: 0, syahriyah: 0, haflah: 0, seragam: 0, study_tour: 0, sekolah: 0, kartu_santri: 0, nis: '', ttl: '', jenis_kelamin: '', agama: '', no_hp: '', tahun_masuk: '', ayah: '', ibu: '', kerja_ayah: '', kerja_ibu: '', yayasan: 'Simbangkulon', status: 'AKTIF' });
+        setEditItem(item || { lembaga: 'MTS', nama: '', kelas: '', alamat: '', daftar_ulang: 0, syahriyah: 0, haflah: 0, seragam: 0, study_tour: 0, kartu_santri: 0, nis: '', ttl: '', jenis_kelamin: '', agama: '', no_hp: '', tahun_masuk: '', ayah: '', ibu: '', kerja_ayah: '', kerja_ibu: '', yayasan: 'Simbangkulon', status: 'AKTIF' });
         setModalOpen(true);
     };
 
@@ -125,7 +135,16 @@ function DataInduk() {
 
     const handleExport = () => {
         const token = localStorage.getItem('auth_token');
-        window.open(`${API_BASE}/santri/export?token=${token}`, '_blank');
+        const params = new URLSearchParams();
+        params.append('token', token);
+        if (search) params.append('search', search);
+        if (filterLembaga) params.append('lembaga', filterLembaga);
+        if (filterYayasan) params.append('yayasan', filterYayasan);
+        if (filterKelas) params.append('kelas', filterKelas);
+        if (filterJenisKelamin) params.append('jenis_kelamin', filterJenisKelamin);
+        if (filterStatus) params.append('status', filterStatus);
+        if (sortCol) { params.append('sort_by', sortCol); params.append('sort_dir', sortDir); }
+        window.open(`${API_BASE}/santri/export?${params.toString()}`, '_blank');
     };
 
     // Bulk Actions
@@ -207,7 +226,7 @@ function DataInduk() {
                                             <span>Lembaga</span>
                                             <i className={`${sortIcon('lembaga')} text-green-700 ml-1`}></i>
                                             <div className="filter-dropdown ml-2 relative inline-block">
-                                                <i className="fas fa-filter filter-icon text-[#15803d] cursor-pointer ml-1" onClick={(e) => { e.stopPropagation(); setShowLembagaFilter(!showLembagaFilter); setShowStatusFilter(false); }}></i>
+                                                <i className="fas fa-filter filter-icon text-[#15803d] cursor-pointer ml-1" onClick={(e) => { e.stopPropagation(); setShowLembagaFilter(!showLembagaFilter); setShowStatusFilter(false); setShowYayasanFilter(false); setShowKelasFilter(false); setShowJkFilter(false); }}></i>
                                                 {showLembagaFilter && (
                                                     <div className="absolute bg-white min-w-[120px] shadow-lg p-2 z-50 rounded-md border border-[#d1d5db]" onClick={e => e.stopPropagation()}>
                                                         {[{ label: 'Semua', value: '' }, { label: 'MTS', value: 'MTS' }, { label: 'MA', value: 'MA' }].map(opt => (
@@ -222,10 +241,67 @@ function DataInduk() {
                                             </div>
                                         </div>
                                     </th>}
-                                    {!isMobile && <th className="sortable select-none cursor-pointer px-3 py-3 whitespace-nowrap" onClick={() => handleSort('yayasan')}><div className="flex items-center"><span>Yayasan</span><i className={`${sortIcon('yayasan')} text-green-700 ml-1`}></i></div></th>}
+                                    {!isMobile && <th className="sortable select-none cursor-pointer px-3 py-3 whitespace-nowrap" onClick={() => handleSort('yayasan')}>
+                                        <div className="flex items-center select-none">
+                                            <span>Yayasan</span>
+                                            <i className={`${sortIcon('yayasan')} text-green-700 ml-1`}></i>
+                                            <div className="filter-dropdown ml-2 relative inline-block">
+                                                <i className="fas fa-filter filter-icon text-[#15803d] cursor-pointer ml-1" onClick={(e) => { e.stopPropagation(); setShowYayasanFilter(!showYayasanFilter); setShowLembagaFilter(false); setShowStatusFilter(false); setShowKelasFilter(false); setShowJkFilter(false); }}></i>
+                                                {showYayasanFilter && (
+                                                    <div className="absolute bg-white min-w-[150px] shadow-lg p-2 z-50 rounded-md border border-[#d1d5db]" onClick={e => e.stopPropagation()}>
+                                                        {[{ label: 'Semua', value: '' }, { label: 'Simbangkulon', value: 'Simbangkulon' }, { label: 'Non-Simbangkulon', value: 'Non-Simbangkulon' }].map(opt => (
+                                                            <label key={opt.value} className="flex items-center gap-2 cursor-pointer mb-1">
+                                                                <input type="radio" name="filter-yayasan" value={opt.value} checked={filterYayasan === opt.value}
+                                                                    onChange={() => { setFilterYayasan(opt.value); setShowYayasanFilter(false); }} />
+                                                                <span>{opt.label}</span>
+                                                            </label>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </th>}
                                     {!isMobile && <>
-                                        <th className="sortable select-none cursor-pointer px-3 py-3 whitespace-nowrap" onClick={() => handleSort('kelas')}><div className="flex items-center"><span>Kelas</span><i className={`${sortIcon('kelas')} text-green-700 ml-1`}></i></div></th>
-                                        <th className="sortable select-none cursor-pointer px-3 py-3 whitespace-nowrap" onClick={() => handleSort('jenis_kelamin')}><div className="flex items-center"><span>Jenis Kelamin</span><i className={`${sortIcon('jenis_kelamin')} text-green-700 ml-1`}></i></div></th>
+                                        <th className="sortable select-none cursor-pointer px-3 py-3 whitespace-nowrap" onClick={() => handleSort('kelas')}>
+                                            <div className="flex items-center select-none">
+                                                <span>Kelas</span>
+                                                <i className={`${sortIcon('kelas')} text-green-700 ml-1`}></i>
+                                                <div className="filter-dropdown ml-2 relative inline-block">
+                                                    <i className="fas fa-filter filter-icon text-[#15803d] cursor-pointer ml-1" onClick={(e) => { e.stopPropagation(); setShowKelasFilter(!showKelasFilter); setShowLembagaFilter(false); setShowYayasanFilter(false); setShowStatusFilter(false); setShowJkFilter(false); }}></i>
+                                                    {showKelasFilter && (
+                                                        <div className="absolute bg-white min-w-[120px] shadow-lg p-2 z-50 rounded-md border border-[#d1d5db]" onClick={e => e.stopPropagation()}>
+                                                            {[{ label: 'Semua', value: '' }, { label: '1', value: '1' }, { label: '2', value: '2' }, { label: '3', value: '3' }].map(opt => (
+                                                                <label key={opt.value} className="flex items-center gap-2 cursor-pointer mb-1">
+                                                                    <input type="radio" name="filter-kelas" value={opt.value} checked={filterKelas === opt.value}
+                                                                        onChange={() => { setFilterKelas(opt.value); setShowKelasFilter(false); }} />
+                                                                    <span>{opt.label}</span>
+                                                                </label>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </th>
+                                        <th className="sortable select-none cursor-pointer px-3 py-3 whitespace-nowrap" onClick={() => handleSort('jenis_kelamin')}>
+                                            <div className="flex items-center select-none">
+                                                <span>Jenis Kelamin</span>
+                                                <i className={`${sortIcon('jenis_kelamin')} text-green-700 ml-1`}></i>
+                                                <div className="filter-dropdown ml-2 relative inline-block">
+                                                    <i className="fas fa-filter filter-icon text-[#15803d] cursor-pointer ml-1" onClick={(e) => { e.stopPropagation(); setShowJkFilter(!showJkFilter); setShowKelasFilter(false); setShowLembagaFilter(false); setShowYayasanFilter(false); setShowStatusFilter(false); }}></i>
+                                                    {showJkFilter && (
+                                                        <div className="absolute bg-white min-w-[120px] shadow-lg p-2 z-50 rounded-md border border-[#d1d5db]" onClick={e => e.stopPropagation()}>
+                                                            {[{ label: 'Semua', value: '' }, { label: 'Laki-laki', value: 'Laki-laki' }, { label: 'Perempuan', value: 'Perempuan' }].map(opt => (
+                                                                <label key={opt.value} className="flex items-center gap-2 cursor-pointer mb-1">
+                                                                    <input type="radio" name="filter-jk" value={opt.value} checked={filterJenisKelamin === opt.value}
+                                                                        onChange={() => { setFilterJenisKelamin(opt.value); setShowJkFilter(false); }} />
+                                                                    <span>{opt.label}</span>
+                                                                </label>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </th>
                                         {moneyFields.map(f => (
                                             <th key={f} className="sortable select-none cursor-pointer px-3 py-3 whitespace-nowrap" onClick={() => handleSort(f)}>
                                                 <div className="flex items-center"><span>{moneyLabels[f]}</span><i className={`${sortIcon(f)} text-green-700 ml-1`}></i></div>
@@ -246,7 +322,7 @@ function DataInduk() {
                                             <span>Status</span>
                                             <i className={`${sortIcon('status')} text-green-700 ml-1`}></i>
                                             <div className="filter-dropdown ml-2 relative inline-block">
-                                                <i className="fas fa-filter filter-icon text-[#15803d] cursor-pointer ml-1" onClick={(e) => { e.stopPropagation(); setShowStatusFilter(!showStatusFilter); setShowLembagaFilter(false); }}></i>
+                                                <i className="fas fa-filter filter-icon text-[#15803d] cursor-pointer ml-1" onClick={(e) => { e.stopPropagation(); setShowStatusFilter(!showStatusFilter); setShowLembagaFilter(false); setShowYayasanFilter(false); setShowKelasFilter(false); setShowJkFilter(false); }}></i>
                                                 {showStatusFilter && (
                                                     <div className="absolute bg-white min-w-[120px] shadow-lg p-2 z-50 rounded-md border border-[#d1d5db]" onClick={e => e.stopPropagation()}>
                                                         {[{ label: 'Semua', value: '' }, { label: 'Aktif', value: 'AKTIF' }, { label: 'Tidak Aktif', value: 'TIDAK AKTIF' }].map(opt => (

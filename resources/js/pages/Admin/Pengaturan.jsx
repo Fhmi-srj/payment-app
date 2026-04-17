@@ -5,11 +5,10 @@ import Swal from 'sweetalert2';
 
 const defaultTagihan = [
     { key: 'daftar_ulang', label: 'Daftar Ulang', icon: 'fas fa-file-signature' },
-    { key: 'syahriyah', label: 'Syahriyah', icon: 'fas fa-calendar-alt' },
+    { key: 'syahriyah', label: 'Syahriyah (Per Bulan)', icon: 'fas fa-calendar-alt' },
     { key: 'haflah', label: 'Haflah', icon: 'fas fa-star' },
     { key: 'seragam', label: 'Seragam', icon: 'fas fa-tshirt' },
     { key: 'study_tour', label: 'Study Tour', icon: 'fas fa-bus' },
-    { key: 'sekolah', label: 'Sekolah', icon: 'fas fa-school' },
     { key: 'kartu_santri', label: 'Kartu Santri', icon: 'fas fa-id-card' },
 ];
 
@@ -311,15 +310,44 @@ function JenisTagihan() {
                                 </label>
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1">Nominal Default (Rp)</label>
-                                <input 
-                                    type="number" 
-                                    value={setting.nominal} 
-                                    onChange={(e) => handleChange(item.key, 'nominal', e.target.value)}
-                                    disabled={!setting.aktif}
-                                    className={`w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${!setting.aktif && 'bg-gray-100'}`}
-                                    placeholder={`Contoh nominal ${item.label.toLowerCase()}`}
-                                />
+                                {item.key === 'haflah' ? (
+                                    <div className="grid grid-cols-1 gap-2">
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-600 mb-1">Nominal Wisudawan (Kelas 3) (Rp)</label>
+                                            <input 
+                                                type="number" 
+                                                value={setting.nominal_wisudawan || ''} 
+                                                onChange={(e) => handleChange(item.key, 'nominal_wisudawan', e.target.value)}
+                                                disabled={!setting.aktif}
+                                                className={`w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${!setting.aktif && 'bg-gray-100'}`}
+                                                placeholder="Contoh haflah kelas 3"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-600 mb-1">Nominal Non-Wisudawan (Kelas 1 & 2) (Rp)</label>
+                                            <input 
+                                                type="number" 
+                                                value={setting.nominal_non_wisudawan || ''} 
+                                                onChange={(e) => handleChange(item.key, 'nominal_non_wisudawan', e.target.value)}
+                                                disabled={!setting.aktif}
+                                                className={`w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${!setting.aktif && 'bg-gray-100'}`}
+                                                placeholder="Contoh haflah kelas 1 & 2"
+                                            />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <label className="block text-xs font-medium text-gray-600 mb-1">Nominal Default (Rp)</label>
+                                        <input 
+                                            type="number" 
+                                            value={setting.nominal || ''} 
+                                            onChange={(e) => handleChange(item.key, 'nominal', e.target.value)}
+                                            disabled={!setting.aktif}
+                                            className={`w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${!setting.aktif && 'bg-gray-100'}`}
+                                            placeholder={`Contoh nominal ${item.label.toLowerCase()}`}
+                                        />
+                                    </>
+                                )}
                             </div>
                         </div>
                     );

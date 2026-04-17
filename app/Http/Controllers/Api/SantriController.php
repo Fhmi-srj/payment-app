@@ -184,10 +184,21 @@ class SantriController extends Controller
             $nominal = intval($data['nominal'] ?? 0);
             $aktif = filter_var($data['aktif'] ?? true, FILTER_VALIDATE_BOOLEAN);
 
-            // Valid fields in DB
-            $validFields = ['daftar_ulang', 'syahriyah', 'haflah', 'seragam', 'study_tour', 'sekolah', 'kartu_santri'];
+            $validFields = ['daftar_ulang', 'syahriyah', 'haflah', 'seragam', 'study_tour', 'kartu_santri'];
             
-            if (in_array($key, $validFields) && $aktif && $nominal >= 0) {
+            if ($key === 'haflah' && $aktif) {
+                $nominalWisudawan = intval($data['nominal_wisudawan'] ?? 0);
+                $nominalNonWisudawan = intval($data['nominal_non_wisudawan'] ?? 0);
+                
+                if ($nominalWisudawan >= 0) {
+                    $count = Santri::where('kelas', '3')->where('haflah', '>', $nominalWisudawan)->update(['haflah' => $nominalWisudawan]);
+                    $updatedCount += $count;
+                }
+                if ($nominalNonWisudawan >= 0) {
+                    $count = Santri::whereIn('kelas', ['1', '2'])->where('haflah', '>', $nominalNonWisudawan)->update(['haflah' => $nominalNonWisudawan]);
+                    $updatedCount += $count;
+                }
+            } else if (in_array($key, $validFields) && $aktif && $nominal >= 0) {
                 // Update tagihan yang lebih besar dari nominal baru
                 // "jika tagihan awal kurang dari nominal baru maka tidak berubah"
                 $count = Santri::where($key, '>', $nominal)->update([$key => $nominal]);
@@ -260,14 +271,33 @@ class SantriController extends Controller
     {
         $query = Santri::query();
 
+        if ($request->filled('search')) {
+            $query->where('nama', 'like', '%' . $request->search . '%');
+        }
         if ($request->filled('lembaga')) {
             $query->where('lembaga', $request->lembaga);
         }
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
+        if ($request->filled('kelas')) {
+            $query->where('kelas', $request->kelas);
+        }
+        if ($request->filled('yayasan')) {
+            $query->where('yayasan', $request->yayasan);
+        }
+        if ($request->filled('jenis_kelamin')) {
+            $query->where('jenis_kelamin', $request->jenis_kelamin);
+        }
 
-        $santris = $query->orderBy('nama')->get();
+        if ($request->filled('sort_by')) {
+            $direction = $request->get('sort_dir', 'asc');
+            $query->orderBy($request->sort_by, $direction);
+        } else {
+            $query->orderBy('nama', 'asc');
+        }
+
+        $santris = $query->get();
 
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();

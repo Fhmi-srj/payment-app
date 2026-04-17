@@ -5,7 +5,7 @@ import Pagination, { ITEMS_PER_PAGE_DEFAULT } from '../../components/Pagination'
 import { useAuth } from '../../contexts/AuthContext';
 
 const formatIDR = (n) => 'Rp' + parseInt(n || 0).toLocaleString('id-ID');
-const moneyLabels = { daftar_ulang: 'Daftar Ulang', syahriyah: 'Syahriyah', haflah: 'Haflah', seragam: 'Seragam', study_tour: 'Study Tour', sekolah: 'Sekolah', kartu_santri: 'Kartu Santri' };
+const moneyLabels = { daftar_ulang: 'Daftar Ulang', syahriyah: 'Syahriyah', haflah: 'Haflah', seragam: 'Seragam', study_tour: 'Study Tour', kartu_santri: 'Kartu Santri' };
 const moneyFields = Object.keys(moneyLabels);
 
 const BULAN_NAMES = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
@@ -23,6 +23,14 @@ function Tagihan() {
     const [detailData, setDetailData] = useState(null);
     const [showDetail, setShowDetail] = useState(false);
     const [detailLoading, setDetailLoading] = useState(false);
+    const [tagihanSettings, setTagihanSettings] = useState({});
+    const [expandSyahriyah, setExpandSyahriyah] = useState(false);
+
+    // Initial load
+    useEffect(() => {
+        const savedData = localStorage.getItem('tagihan_settings');
+        if (savedData) setTagihanSettings(JSON.parse(savedData));
+    }, []);
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
@@ -91,6 +99,7 @@ function Tagihan() {
             if (filterKelas) p.append('kelas', filterKelas);
             if (filterStatus) p.append('status_bayar', filterStatus);
             if (search) p.append('search', search);
+            if (tagihanSettings.syahriyah?.nominal) p.append('nominal_syahriyah', tagihanSettings.syahriyah.nominal);
             const res = await authFetch(`${API_BASE}/tagihan/report?${p}`);
             const json = await res.json();
             if (json.success) setReportData(json.data);
@@ -308,17 +317,42 @@ function Tagihan() {
                         <div className="p-5">
                             <h4 className="text-sm font-semibold text-gray-700 mb-3"><i className="fas fa-list-alt mr-2 text-green-600"></i>Detail Tagihan</h4>
                             <div className="space-y-2 mb-6">
-                                {detailData.breakdown.map((b, idx) => (
-                                    <div key={idx} className={`flex items-center justify-between p-3 rounded-lg ${b.lunas ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-                                        <div className="flex items-center gap-3">
-                                            <i className={`fas ${b.lunas ? 'fa-check-circle text-green-500' : 'fa-times-circle text-red-500'}`}></i>
-                                            <span className="text-sm font-medium text-gray-700">{b.jenis}</span>
+                                {detailData.breakdown.map((b, idx) => {
+                                    const isSyahriyah = b.field === 'syahriyah';
+                                    const nom = Number(tagihanSettings?.syahriyah?.nominal) || 400000;
+                                    const blnBelum = isSyahriyah && nom > 0 ? Math.ceil(b.sisa / nom) : 0;
+                                    return (
+                                        <div key={idx} className="mb-2">
+                                            <div 
+                                                onClick={() => { if(isSyahriyah && !b.lunas) setExpandSyahriyah(!expandSyahriyah) }} 
+                                                className={`flex items-center justify-between p-3 ${isSyahriyah && !b.lunas ? 'cursor-pointer hover:border-red-400' : ''} ${b.lunas ? 'bg-green-50 border border-green-200 rounded-lg' : 'bg-red-50 border border-red-200'}`}
+                                                style={{ borderRadius: (isSyahriyah && !b.lunas && expandSyahriyah) ? '0.5rem 0.5rem 0 0' : '0.5rem' }}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <i className={`fas ${b.lunas ? 'fa-check-circle text-green-500' : 'fa-times-circle text-red-500'}`}></i>
+                                                    <span className="text-sm font-medium text-gray-700">
+                                                        {b.jenis} {isSyahriyah && !b.lunas && blnBelum > 0 ? <span className="ml-1 text-xs text-red-500 font-normal">({blnBelum} bulan belum lunas)</span> : ''}
+                                                    </span>
+                                                </div>
+                                                <span className={`text-sm font-semibold ${b.lunas ? 'text-green-600' : 'text-red-600'}`}>
+                                                    {b.lunas ? 'LUNAS' : formatIDR(b.sisa)}
+                                                    {isSyahriyah && !b.lunas && <i className={`fas fa-chevron-${expandSyahriyah ? 'up' : 'down'} ml-3 text-red-400 transition-transform duration-200`}></i>}
+                                                </span>
+                                            </div>
+                                            {isSyahriyah && !b.lunas && expandSyahriyah && (
+                                                <div className="bg-[#fff1f2] border border-red-200 border-t-0 p-3 text-xs text-red-700 -mt-[1px]" style={{ borderRadius: '0 0 0.5rem 0.5rem' }}>
+                                                    <div className="flex items-start gap-2">
+                                                        <i className="fas fa-info-circle mt-0.5"></i>
+                                                        <div>
+                                                            <p>Rincian estimasi tunggakan: <strong>{blnBelum} bulan</strong> x {formatIDR(nom)}</p>
+                                                            <p className="mt-1 text-gray-500 italic text-[10px]">*Jumlah bulan dihitung berdasarkan sisa nominal tagihan dibagi nominal default per bulan.</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
-                                        <span className={`text-sm font-semibold ${b.lunas ? 'text-green-600' : 'text-red-600'}`}>
-                                            {b.lunas ? 'LUNAS' : formatIDR(b.sisa)}
-                                        </span>
-                                    </div>
-                                ))}
+                                    )
+                                })}
                                 <div className="flex justify-between p-3 bg-gray-100 rounded-lg mt-2 border-t-2 border-gray-300">
                                     <span className="font-bold text-gray-800">TOTAL TAGIHAN</span>
                                     <span className={`font-bold ${detailData.total_tagihan > 0 ? 'text-red-600' : 'text-green-600'}`}>

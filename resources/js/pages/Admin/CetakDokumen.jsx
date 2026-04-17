@@ -126,8 +126,9 @@ function CetakDokumen() {
                 .footer{margin-top:30px;text-align:right;font-size:12px}
                 .sign-area{margin-top:60px;text-align:center;display:inline-block;border-top:1px solid #333;padding-top:5px;min-width:200px}
                 @media print{
-                    body{margin:${isKwitansi ? '0' : '10px'}}
+                    body { margin:${isKwitansi ? '0' : '10px'} }
                     ${isKwitansi ? '@page{size:landscape;margin:5mm}' : ''}
+                    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                 }
             </style></head><body>${content.innerHTML}</body></html>`);
         w.document.close();

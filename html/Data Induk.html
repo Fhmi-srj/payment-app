@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MA ALHIKAM Dashboard - Data Induk</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        @media (max-width: 767px) {
+            body {
+                font-size: 85%;
+            }
+
+            .text-12px {
+                font-size: 10px !important;
+            }
+
+            table#table-induk,
+            table#table-induk th,
+            table#table-induk td,
+            button,
+            label,
+            select,
+            input,
+            textarea {
+                font-size: 11px !important;
+            }
+
+            table#table-induk td,
+            table#table-induk th {
+                padding: 4px 6px !important;
+            }
+        }
+
+        @media (min-width: 768px) {
+            body {
+                font-size: 13px;
+            }
+
+            .text-12px {
+                font-size: 12px !important;
+            }
+        }
+
+        table#table-induk {
+            border-spacing: 0 2px !important;
+        }
+
+        table#table-induk tbody tr {
+            margin-bottom: 2px;
+        }
+
+        .status-aktif {
+            color: #16a34a;
+            font-size: 11px !important;
+        }
+
+        .status-tidak-aktif {
+            color: #dc2626;
+            font-size: 11px !important;
+        }
+
+        .status-bullet {
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 9999px;
+            display: inline-block;
+            margin-right: 0.25rem;
+            vertical-align: middle;
+        }
+
+        .status-aktif .status-bullet {
+            background-color: #16a34a;
+        }
+
+        .status-tidak-aktif .status-bullet {
+            background-color: #dc2626;
+        }
+
+        th.sortable {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        th.sortable i {
+            margin-left: 0.25rem;
+            color: #15803d;
+        }
+
+        .filter-icon {
+            cursor: pointer;
+            color: #15803d;
+            margin-left: 0.25rem;
+        }
+
+        .filter-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .filter-dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: white;
+            min-width: 120px;
+            box-shadow: 0px 8px 16px 0px rgb(0 0 0 / 0.2);
+            padding: 8px 12px;
+            z-index: 50;
+            border-radius: 0.375rem;
+            border: 1px solid #d1d5db;
+        }
+
+        .filter-dropdown-content.show {
+            display: block;
+        }
+
+        .money-cell {
+            text-align: right;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col">
+    <header class="md:hidden mb-2">
+        <div class="flex items-center justify-between bg-[rgb(243,250,240)] p-4 shadow-md">
+            <div class="flex items-center">
+                <img alt="Logo" class="w-6 h-6 mr-2" src="https://i.imgur.com/uCLa8GP.png" />
+                <span class="font-semibold text-[#1f2937] text-lg select-none">MA ALHIKAM</span>
+            </div>
+            <button id="mobile-menu-button"
+                class="text-[#4a4a4a] focus:outline-none focus:ring-2 focus:ring-green-400"><i
+                    class="fas fa-bars fa-lg text-green-700"></i></button>
+        </div>
+        <nav class="bg-[rgb(243,250,240)] rounded-b-[30px] p-4 space-y-2 text-[13px] text-[#4a4a4a] select-none hidden"
+            id="mobile-menu">
+            <h6 class="text-[11px] font-semibold mb-2 select-none">Main Menu</h6>
+            <a href="Data Induk.html"
+                class="flex items-center space-x-2 px-3 py-2 rounded-lg bg-[#d1fae5] w-full focus:outline-none focus:ring-2 focus:ring-green-400 text-green-800 font-semibold"><i
+                    class="fas fa-database text-[14px] text-green-700"></i><span>Data Induk</span></a>
+            <a href="Kasir.html"
+                class="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-[#d1fae5] w-full focus:outline-none focus:ring-2 focus:ring-green-400 text-green-800"><i
+                    class="fas fa-cash-register text-[14px] text-green-700"></i><span>Kasir</span></a>
+            <a href="Riwayat.html"
+                class="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-[#d1fae5] w-full focus:outline-none focus:ring-2 focus:ring-green-400 text-green-800"><i
+                    class="fas fa-history text-[14px] text-green-700"></i><span>Riwayat</span></a>
+        </nav>
+    </header>
+    <div class="w-full flex-1 flex overflow-hidden">
+        <aside
+            class="hidden md:flex bg-[rgb(243,250,240)] w-[220px] flex-col p-6 text-[12px] text-green-800 select-none">
+            <div class="flex items-center mb-8">
+                <img alt="Logo" class="w-6 h-6 mr-2" src="https://i.imgur.com/uCLa8GP.png" />
+                <span class="font-semibold text-green-800 text-lg">MA ALHIKAM</span>
+            </div>
+            <nav class="flex flex-col space-y-2 text-green-800">
+                <h6 class="text-[11px] font-semibold mb-2 select-none">Main Menu</h6>
+                <a href="Data Induk.html"
+                    class="flex items-center space-x-2 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 bg-white text-green-800 font-semibold"><i
+                        class="fas fa-database text-[14px] text-green-700"></i><span>Data Induk</span></a>
+                <a href="Kasir.html"
+                    class="flex items-center space-x-2 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 hover:bg-white text-green-800"><i
+                        class="fas fa-cash-register text-[14px] text-green-700"></i><span>Kasir</span></a>
+                <a href="Riwayat.html"
+                    class="flex items-center space-x-2 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 hover:bg-white text-green-800"><i
+                        class="fas fa-history text-[14px] text-green-700"></i><span>Riwayat</span></a>
+            </nav>
+        </aside>
+        <main class="flex-1 overflow-y-auto flex flex-col bg-transparent p-4">
+            <header class="mb-4 flex flex-col md:flex-row md:items-center gap-3">
+                <div class="flex flex-col md:flex-row md:items-center md:gap-6 w-full">
+                    <div class="flex flex-row items-center justify-between w-full md:w-auto gap-3 md:gap-6">
+                        <div>
+                            <h1 class="text-[#1f2937] font-semibold text-lg mb-1 select-none">Data Induk</h1>
+                            <p class="text-[11px] text-[#6b7280] select-none">Kelola data induk keuangan santri - Data
+                                tersinkron dengan Kasir</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            <section class="tab-content flex flex-col flex-grow max-w-full overflow-auto" id="page-induk">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
+                    <div
+                        class="flex items-center w-full md:w-1/3 border border-[#d1d5db] rounded-md px-3 py-1 text-12px text-[#4a4a4a] focus-within:ring-1 focus-within:ring-green-400 focus-within:border-green-400">
+                        <input aria-label="Cari data induk" class="w-full border-none focus:ring-0 focus:outline-none"
+                            id="search-induk" placeholder="Cari data santri..." type="search" />
+                    </div>
+                    <div class="flex gap-2 flex-wrap md:flex-nowrap w-full md:w-auto justify-between md:justify-start">
+                        <button
+                            class="bg-green-700 text-white text-12px font-semibold px-2 py-1 rounded-md hover:bg-green-800 transition select-none flex items-center gap-2 flex-1 md:flex-none"
+                            id="btn-import-induk" title="Import data dari Excel" type="button"><i
+                                class="fas fa-file-import"></i> Import Excel</button>
+                        <button
+                            class="bg-green-700 text-white text-12px font-semibold px-2 py-1 rounded-md hover:bg-green-800 transition select-none flex items-center gap-2 flex-1 md:flex-none"
+                            id="btn-export-induk" title="Export data ke Excel" type="button"><i
+                                class="fas fa-file-export"></i> Export Excel</button>
+                        <button
+                            class="bg-green-700 text-white text-12px font-semibold px-2 py-1 rounded-md hover:bg-green-800 transition select-none flex items-center gap-2 flex-1 md:flex-none"
+                            id="btn-add-induk" title="Tambah data santri" type="button"><i class="fas fa-plus"></i>
+                            Tambah Data</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto scrollbar-hide max-w-full">
+                    <table aria-label="Tabel data induk santri"
+                        class="w-full text-12px text-[#4a4a4a] border-separate border-spacing-y-2 min-w-max"
+                        id="table-induk">
+                        <thead>
+                            <tr class="text-left text-[#6b7280] select-none" id="thead-induk"></tr>
+                        </thead>
+                        <tbody id="tbody-induk" class="max-w-full"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+    <div class="fixed inset-0 bg-black bg-opacity-50 hidden z-40 flex items-center justify-center p-4"
+        id="modal-overlay">
+        <div class="bg-white rounded-lg shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6 relative"
+            id="modal">
+            <button aria-label="Tutup modal"
+                class="absolute top-3 right-3 text-gray-600 hover:text-gray-900 focus:outline-none" id="modal-close"
+                type="button"><i class="fas fa-times fa-lg"></i></button>
+            <h3 class="text-lg font-semibold text-[#1f2937] mb-4 select-none" id="modal-title"></h3>
+            <form class="space-y-4" id="modal-form" novalidate=""></form>
+            <div class="flex justify-end gap-3 mt-4">
+                <button
+                    class="px-4 py-2 rounded border border-green-600 text-green-700 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-400"
+                    id="modal-cancel" type="button">Batal</button>
+                <button
+                    class="px-4 py-2 rounded bg-green-700 text-white hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-400"
+                    form="modal-form" id="modal-submit" type="submit">Simpan</button>
+            </div>
+        </div>
+    </div>
+    <input accept=".xlsx,.xls" class="hidden" id="import-file-induk" type="file" />
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script>
+        const defaultData = [
+            { id: 1, lembaga: "MA ALHIKAM", nama: "Suci Maulida", kelas: "VII", alamat: "", daftarUlang: 0, syahriyah: 0, haflah: 0, seragam: 0, studyTour: 0, sekolah: 0, kartuSantri: 0, status: "AKTIF" },
+            { id: 2, lembaga: "MA ALHIKAM", nama: "Nur Ifaza Kemala", kelas: "VII", alamat: "", daftarUlang: 0, syahriyah: 0, haflah: 0, seragam: 0, studyTour: 0, sekolah: 0, kartuSantri: 0, status: "AKTIF" },
+            { id: 3, lembaga: "ITS", nama: "Muhammad Yusuf", kelas: "VII", alamat: "", daftarUlang: 0, syahriyah: 0, haflah: 0, seragam: 0, studyTour: 0, sekolah: 0, kartuSantri: 0, status: "TIDAK AKTIF" },
+            { id: 4, lembaga: "ITS", nama: "Muhammad Koiyi", kelas: "VII", alamat: "", daftarUlang: 0, syahriyah: 0, haflah: 0, seragam: 0, studyTour: 0, sekolah: 0, kartuSantri: 0, status: "AKTIF" },
+            { id: 5, lembaga: "MA ALHIKAM", nama: "May Lava Seventeen", kelas: "VII", alamat: "Kedungwuni, Pekalongan", daftarUlang: 0, syahriyah: 650000, haflah: 500000, seragam: 0, studyTour: 0, sekolah: 0, kartuSantri: 0, status: "AKTIF" },
+            { id: 6, lembaga: "ITS", nama: "M. Fahmi Sirojul Munir", kelas: "VII", alamat: "", daftarUlang: 0, syahriyah: 0, haflah: 0, seragam: 0, studyTour: 0, sekolah: 0, kartuSantri: 0, status: "AKTIF" },
+            { id: 7, lembaga: "MA ALHIKAM", nama: "Jelita Alifa Putri Sutisna", kelas: "V", alamat: "Taman, Pemalang", daftarUlang: 0, syahriyah: 650000, haflah: 600000, seragam: 0, studyTour: 0, sekolah: 270000, kartuSantri: 0, status: "AKTIF" },
+            { id: 8, lembaga: "MA ALHIKAM", nama: "Hani Zufika Khoerumnisa", kelas: "VI", alamat: "Taman, Pemalang", daftarUlang: 0, syahriyah: 650000, haflah: 600000, seragam: 0, studyTour: 70000, sekolah: 100000, kartuSantri: 0, status: "AKTIF" },
+            { id: 9, lembaga: "MA ALHIKAM", nama: "Fatimatus Zahro", kelas: "VI", alamat: "Batang, Batang", daftarUlang: 0, syahriyah: 650000, haflah: 0, seragam: 0, studyTour: 70000, sekolah: 0, kartuSantri: 0, status: "AKTIF" },
+            { id: 10, lembaga: "MA ALHIKAM", nama: "Dimas Ibrahim Arhuiam", kelas: "V", alamat: "Kedungwuni, Pekalongan", daftarUlang: 0, syahriyah: 650000, haflah: 600000, seragam: 0, studyTour: 0, sekolah: 0, kartuSantri: 0, status: "AKTIF" },
+        ];
+
+        function loadData() {
+            const stored = localStorage.getItem('dataInduk');
+            if (stored) { try { return JSON.parse(stored); } catch (e) { return [...defaultData]; } }
+            localStorage.setItem('dataInduk', JSON.stringify(defaultData));
+            return [...defaultData];
+        }
+        function saveData() { localStorage.setItem('dataInduk', JSON.stringify(dataInduk)); }
+
+        let dataInduk = loadData();
+        const formatRupiah = (num) => num ? 'Rp' + parseInt(num).toLocaleString('id-ID') : '';
+
+        const mobileMenuButton = document.getElementById("mobile-menu-button");
+        const mobileMenu = document.getElementById("mobile-menu");
+        const searchEl = document.getElementById("search-induk");
+        const tbody = document.getElementById("tbody-induk");
+        const theadInduk = document.getElementById("thead-induk");
+        const modalOverlay = document.getElementById("modal-overlay");
+        const modalTitle = document.getElementById("modal-title");
+        const modalForm = document.getElementById("modal-form");
+        const modalSubmit = document.getElementById("modal-submit");
+        const modalCancel = document.getElementById("modal-cancel");
+        const importFileInduk = document.getElementById("import-file-induk");
+        let expandedRows = new Set();
+        let currentSort = { column: null, direction: "asc" };
+        let filterStatus = "";
+        let filterLembaga = "";
+
+        mobileMenuButton.addEventListener("click", () => mobileMenu.classList.toggle("hidden"));
+
+        function renderStatusWithBullet(status) {
+            if (!status) return "";
+            const lower = status.toLowerCase();
+            if (lower === "aktif") return `<span class="status-aktif inline-flex items-center gap-1 font-semibold"><span class="status-bullet"></span>${status}</span>`;
+            if (lower === "tidak aktif") return `<span class="status-tidak-aktif inline-flex items-center gap-1 font-semibold"><span class="status-bullet"></span>${status}</span>`;
+            return status;
+        }
+
+        function sortData(data, column, direction) {
+            if (!column) return data;
+            const dir = direction === "asc" ? 1 : -1;
+            return [...data].sort((a, b) => {
+                let valA = a[column], valB = b[column];
+                if (typeof valA === "string") valA = valA.toLowerCase();
+                if (typeof valB === "string") valB = valB.toLowerCase();
+                if (valA > valB) return dir;
+                if (valA < valB) return -dir;
+                return 0;
+            });
+        }
+
+        function createHeaderCell({ label, key, sortable = false, filterable = false, isMobile = false }) {
+            const th = document.createElement("th");
+            th.className = "select-none";
+            if (sortable) th.classList.add("sortable");
+            if (key === "actions") th.classList.add("text-center");
+
+            const container = document.createElement("div");
+            container.className = "flex items-center select-none";
+            const spanLabel = document.createElement("span");
+            spanLabel.textContent = label;
+            container.appendChild(spanLabel);
+
+            if (sortable) {
+                const sortIcon = document.createElement("i");
+                if (currentSort.column === key) {
+                    sortIcon.className = currentSort.direction === "asc" ? "fas fa-sort-up text-green-700 ml-1" : "fas fa-sort-down text-green-700 ml-1";
+                } else {
+                    sortIcon.className = "fas fa-sort text-green-700 ml-1";
+                }
+                sortIcon.setAttribute("aria-hidden", "true");
+                container.appendChild(sortIcon);
+                th.onclick = () => {
+                    if (currentSort.column === key) {
+                        currentSort.direction = currentSort.direction === "asc" ? "desc" : "asc";
+                    } else {
+                        currentSort.column = key;
+                        currentSort.direction = "asc";
+                    }
+                    renderIndukTable(searchEl.value);
+                };
+                th.tabIndex = 0;
+                th.setAttribute("role", "button");
+                th.setAttribute("aria-label", `Sortir berdasarkan ${label}`);
+                th.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); th.click(); } };
+            }
+
+            if (filterable) {
+                const filterDropdown = document.createElement("div");
+                filterDropdown.className = "filter-dropdown ml-2 relative";
+                const filterIcon = document.createElement("i");
+                filterIcon.className = "fas fa-filter filter-icon";
+                filterIcon.setAttribute("aria-label", `Filter ${label}`);
+                filterIcon.setAttribute("role", "button");
+                filterIcon.tabIndex = 0;
+                const dropdownContent = document.createElement("div");
+                dropdownContent.className = "filter-dropdown-content";
+
+                let options = [];
+                if (key === "status") {
+                    options = [{ label: "Semua", value: "" }, { label: "Aktif", value: "AKTIF" }, { label: "Tidak Aktif", value: "TIDAK AKTIF" }];
+                } else if (key === "lembaga") {
+                    options = [{ label: "Semua", value: "" }, { label: "MA ALHIKAM", value: "MA ALHIKAM" }, { label: "ITS", value: "ITS" }];
+                }
+                options.forEach((opt) => {
+                    const labelEl = document.createElement("label");
+                    labelEl.className = "flex items-center gap-2 cursor-pointer mb-1";
+                    const inputEl = document.createElement("input");
+                    inputEl.type = "radio";
+                    inputEl.name = `filter-${key}`;
+                    inputEl.value = opt.value;
+                    if ((key === "status" && filterStatus === opt.value) || (key === "lembaga" && filterLembaga === opt.value)) inputEl.checked = true;
+                    inputEl.onchange = () => {
+                        if (key === "status") filterStatus = inputEl.value;
+                        else if (key === "lembaga") filterLembaga = inputEl.value;
+                        renderIndukTable(searchEl.value);
+                        dropdownContent.classList.remove("show");
+                    };
+                    labelEl.appendChild(inputEl);
+                    const spanText = document.createElement("span");
+                    spanText.textContent = opt.label;
+                    labelEl.appendChild(spanText);
+                    dropdownContent.appendChild(labelEl);
+                });
+                filterIcon.onclick = (e) => { e.stopPropagation(); closeAllFilterDropdowns(); dropdownContent.classList.toggle("show"); };
+                filterIcon.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); filterIcon.click(); } };
+                filterDropdown.appendChild(filterIcon);
+                filterDropdown.appendChild(dropdownContent);
+                container.appendChild(filterDropdown);
+            }
+            th.appendChild(container);
+            return th;
+        }
+
+        function closeAllFilterDropdowns() { document.querySelectorAll(".filter-dropdown-content").forEach((el) => el.classList.remove("show")); }
+        document.body.addEventListener("click", () => closeAllFilterDropdowns());
+
+        function renderIndukTable(search = "") {
+            tbody.innerHTML = "";
+            let filtered = dataInduk;
+            if (filterStatus) filtered = filtered.filter((item) => item.status.toUpperCase() === filterStatus.toUpperCase());
+            if (filterLembaga) filtered = filtered.filter((item) => item.lembaga === filterLembaga);
+            if (search) {
+                const s = search.toLowerCase();
+                filtered = filtered.filter((item) => item.nama.toLowerCase().includes(s) || item.lembaga.toLowerCase().includes(s) || item.kelas.toLowerCase().includes(s) || (item.alamat && item.alamat.toLowerCase().includes(s)) || item.status.toLowerCase().includes(s));
+            }
+            if (currentSort.column) filtered = sortData(filtered, currentSort.column, currentSort.direction);
+
+            const isMobile = window.innerWidth < 768;
+            theadInduk.innerHTML = "";
+
+            if (isMobile) {
+                theadInduk.appendChild(createHeaderCell({ label: "No", key: "no", sortable: false, isMobile: true }));
+                theadInduk.appendChild(createHeaderCell({ label: "", key: "expand", sortable: false, isMobile: true }));
+                theadInduk.appendChild(createHeaderCell({ label: "Nama", key: "nama", sortable: true, isMobile: true }));
+                theadInduk.appendChild(createHeaderCell({ label: "Status", key: "status", sortable: true, filterable: true, isMobile: true }));
+                theadInduk.appendChild(createHeaderCell({ label: "Aksi", key: "actions", sortable: false, isMobile: true }));
+            } else {
+                theadInduk.appendChild(createHeaderCell({ label: "No", key: "no", sortable: false }));
+                theadInduk.appendChild(createHeaderCell({ label: "Lembaga", key: "lembaga", sortable: true, filterable: true }));
+                theadInduk.appendChild(createHeaderCell({ label: "Nama", key: "nama", sortable: true }));
+                theadInduk.appendChild(createHeaderCell({ label: "Kelas", key: "kelas", sortable: true }));
+                theadInduk.appendChild(createHeaderCell({ label: "Alamat", key: "alamat", sortable: true }));
+                theadInduk.appendChild(createHeaderCell({ label: "Daftar Ulang", key: "daftarUlang", sortable: true }));
+                theadInduk.appendChild(createHeaderCell({ label: "Syahriyah", key: "syahriyah", sortable: true }));
+                theadInduk.appendChild(createHeaderCell({ label: "Haflah", key: "haflah", sortable: true }));
+                theadInduk.appendChild(createHeaderCell({ label: "Seragam", key: "seragam", sortable: true }));
+                theadInduk.appendChild(createHeaderCell({ label: "Study Tour", key: "studyTour", sortable: true }));
+                theadInduk.appendChild(createHeaderCell({ label: "Sekolah", key: "sekolah", sortable: true }));
+                theadInduk.appendChild(createHeaderCell({ label: "Kartu Santri", key: "kartuSantri", sortable: true }));
+                theadInduk.appendChild(createHeaderCell({ label: "Status", key: "status", sortable: true, filterable: true }));
+                theadInduk.appendChild(createHeaderCell({ label: "Aksi", key: "actions", sortable: false }));
+            }
+
+            filtered.forEach((item, idx) => {
+                const realIdx = dataInduk.indexOf(item);
+                const trMain = document.createElement("tr");
+                trMain.className = "hover:bg-green-50 bg-gray-50 align-top";
+
+                if (isMobile) {
+                    const isExpanded = expandedRows.has(realIdx);
+                    trMain.innerHTML = `
+                        <td class="pl-2 py-1 align-middle select-none">${idx + 1}</td>
+                        <td class="py-1 align-middle select-none text-center cursor-pointer" aria-label="Toggle detail santri nomor ${idx + 1}" role="button" tabindex="0">
+                            <i class="fas fa-${isExpanded ? "minus" : "plus"} text-green-700"></i>
+                        </td>
+                        <td class="py-1 align-middle select-none">${item.nama}</td>
+                        <td class="py-1 align-middle select-none text-[10px]">${renderStatusWithBullet(item.status)}</td>
+                        <td class="py-1 align-middle text-center select-none">
+                            <button class="btn-edit-induk text-green-700 hover:text-green-900 mr-1" title="Ubah data santri" data-index="${realIdx}" type="button"><i class="fas fa-edit"></i></button>
+                            <button class="btn-delete-induk text-red-600 hover:text-red-800" title="Hapus data santri" data-index="${realIdx}" type="button"><i class="fas fa-trash-alt"></i></button>
+                        </td>
+                    `;
+                    tbody.appendChild(trMain);
+                    if (isExpanded) {
+                        const trDetail = document.createElement("tr");
+                        trDetail.className = "bg-white";
+                        trDetail.innerHTML = `
+                            <td colspan="5" class="p-3 border border-t-0 border-gray-300 text-[11px] text-gray-700">
+                                <div class="grid grid-cols-2 gap-1">
+                                    <div><strong>Lembaga:</strong> ${item.lembaga}</div>
+                                    <div><strong>Kelas:</strong> ${item.kelas}</div>
+                                    <div><strong>Alamat:</strong> ${item.alamat || '-'}</div>
+                                    <div><strong>Daftar Ulang:</strong> ${formatRupiah(item.daftarUlang)}</div>
+                                    <div><strong>Syahriyah:</strong> ${formatRupiah(item.syahriyah)}</div>
+                                    <div><strong>Haflah:</strong> ${formatRupiah(item.haflah)}</div>
+                                    <div><strong>Seragam:</strong> ${formatRupiah(item.seragam)}</div>
+                                    <div><strong>Study Tour:</strong> ${formatRupiah(item.studyTour)}</div>
+                                    <div><strong>Sekolah:</strong> ${formatRupiah(item.sekolah)}</div>
+                                    <div><strong>Kartu Santri:</strong> ${formatRupiah(item.kartuSantri)}</div>
+                                </div>
+                            </td>
+                        `;
+                        tbody.appendChild(trDetail);
+                    }
+                } else {
+                    trMain.innerHTML = `
+                        <td class="pl-3 py-2 align-middle select-none">${idx + 1}</td>
+                        <td class="py-2 align-middle select-none font-medium text-green-700">${item.lembaga}</td>
+                        <td class="py-2 align-middle select-none">${item.nama}</td>
+                        <td class="py-2 align-middle select-none">${item.kelas}</td>
+                        <td class="py-2 align-middle select-none">${item.alamat || '-'}</td>
+                        <td class="py-2 align-middle select-none money-cell">${formatRupiah(item.daftarUlang)}</td>
+                        <td class="py-2 align-middle select-none money-cell">${formatRupiah(item.syahriyah)}</td>
+                        <td class="py-2 align-middle select-none money-cell">${formatRupiah(item.haflah)}</td>
+                        <td class="py-2 align-middle select-none money-cell">${formatRupiah(item.seragam)}</td>
+                        <td class="py-2 align-middle select-none money-cell">${formatRupiah(item.studyTour)}</td>
+                        <td class="py-2 align-middle select-none money-cell">${formatRupiah(item.sekolah)}</td>
+                        <td class="py-2 align-middle select-none money-cell">${formatRupiah(item.kartuSantri)}</td>
+                        <td class="py-2 align-middle select-none text-[11px]">${renderStatusWithBullet(item.status)}</td>
+                        <td class="py-2 align-middle text-center select-none">
+                            <button class="btn-edit-induk text-green-700 hover:text-green-900 mr-2" title="Ubah data santri" data-index="${realIdx}" type="button"><i class="fas fa-edit"></i></button>
+                            <button class="btn-delete-induk text-red-600 hover:text-red-800" title="Hapus data santri" data-index="${realIdx}" type="button"><i class="fas fa-trash-alt"></i></button>
+                        </td>
+                    `;
+                    tbody.appendChild(trMain);
+                }
+            });
+            attachButtons();
+            attachToggleDetails();
+        }
+
+        function attachButtons() {
+            document.querySelectorAll(".btn-edit-induk").forEach((btn) => btn.onclick = () => openModal("edit", +btn.dataset.index));
+            document.querySelectorAll(".btn-delete-induk").forEach((btn) => {
+                btn.onclick = () => {
+                    const idx = +btn.dataset.index;
+                    Swal.fire({
+                        title: 'Hapus Data?',
+                        html: `Apakah Anda yakin ingin menghapus data santri <strong>${dataInduk[idx].nama}</strong>?`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#dc2626',
+                        cancelButtonColor: '#6b7280',
+                        confirmButtonText: '<i class="fas fa-trash-alt mr-1"></i> Ya, Hapus!',
+                        cancelButtonText: '<i class="fas fa-times mr-1"></i> Batal',
+                        reverseButtons: true
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            dataInduk.splice(idx, 1);
+                            expandedRows.delete(idx);
+                            saveData();
+                            renderIndukTable(searchEl.value);
+                            Swal.fire({
+                                title: 'Terhapus!',
+                                text: 'Data santri berhasil dihapus.',
+                                icon: 'success',
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
+                        }
+                    });
+                };
+            });
+        }
+
+        function attachToggleDetails() {
+            const isMobile = window.innerWidth < 768;
+            if (!isMobile) return; // Only attach on mobile
+
+            document.querySelectorAll("#tbody-induk > tr").forEach((tr) => {
+                if (tr.children.length < 2) return;
+                const toggleCell = tr.children[1];
+                if (!toggleCell || !toggleCell.querySelector('i')) return;
+                const idx = tr.querySelector('.btn-edit-induk')?.dataset.index;
+                if (idx === undefined) return;
+                toggleCell.onclick = () => {
+                    const realIdx = parseInt(idx);
+                    expandedRows.has(realIdx) ? expandedRows.delete(realIdx) : expandedRows.add(realIdx);
+                    renderIndukTable(searchEl.value);
+                };
+                toggleCell.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleCell.click(); } };
+            });
+        }
+
+        function openModal(mode, index = null) {
+            modalForm.innerHTML = "";
+            modalTitle.textContent = mode === "add" ? "Tambah Data Santri" : "Ubah Data Santri";
+            const d = index !== null ? dataInduk[index] : { id: Date.now() };
+            modalForm.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div><label class="block font-semibold text-[#1f2937] text-[13px] mb-1 select-none">Lembaga</label><select name="lembaga" class="w-full rounded-md border border-[#d1d5db] px-3 py-1 text-12px focus:outline-none focus:ring-1 focus:ring-green-400"><option value="MA ALHIKAM" ${d.lembaga === "MA ALHIKAM" ? "selected" : ""}>MA ALHIKAM</option><option value="ITS" ${d.lembaga === "ITS" ? "selected" : ""}>ITS</option></select></div>
+                    <div><label class="block font-semibold text-[#1f2937] text-[13px] mb-1 select-none">Nama</label><input type="text" name="nama" value="${d.nama || ''}" required class="w-full rounded-md border border-[#d1d5db] px-3 py-1 text-12px focus:outline-none focus:ring-1 focus:ring-green-400" /></div>
+                    <div><label class="block font-semibold text-[#1f2937] text-[13px] mb-1 select-none">Kelas</label><input type="text" name="kelas" value="${d.kelas || ''}" required class="w-full rounded-md border border-[#d1d5db] px-3 py-1 text-12px focus:outline-none focus:ring-1 focus:ring-green-400" /></div>
+                    <div class="md:col-span-3"><label class="block font-semibold text-[#1f2937] text-[13px] mb-1 select-none">Alamat</label><textarea name="alamat" rows="2" class="w-full rounded-md border border-[#d1d5db] px-3 py-1 text-12px focus:outline-none focus:ring-1 focus:ring-green-400">${d.alamat || ''}</textarea></div>
+                    <div><label class="block font-semibold text-[#1f2937] text-[13px] mb-1 select-none">Daftar Ulang</label><input type="number" name="daftarUlang" value="${d.daftarUlang || 0}" class="w-full rounded-md border border-[#d1d5db] px-3 py-1 text-12px focus:outline-none focus:ring-1 focus:ring-green-400" /></div>
+                    <div><label class="block font-semibold text-[#1f2937] text-[13px] mb-1 select-none">Syahriyah</label><input type="number" name="syahriyah" value="${d.syahriyah || 0}" class="w-full rounded-md border border-[#d1d5db] px-3 py-1 text-12px focus:outline-none focus:ring-1 focus:ring-green-400" /></div>
+                    <div><label class="block font-semibold text-[#1f2937] text-[13px] mb-1 select-none">Haflah</label><input type="number" name="haflah" value="${d.haflah || 0}" class="w-full rounded-md border border-[#d1d5db] px-3 py-1 text-12px focus:outline-none focus:ring-1 focus:ring-green-400" /></div>
+                    <div><label class="block font-semibold text-[#1f2937] text-[13px] mb-1 select-none">Seragam</label><input type="number" name="seragam" value="${d.seragam || 0}" class="w-full rounded-md border border-[#d1d5db] px-3 py-1 text-12px focus:outline-none focus:ring-1 focus:ring-green-400" /></div>
+                    <div><label class="block font-semibold text-[#1f2937] text-[13px] mb-1 select-none">Study Tour</label><input type="number" name="studyTour" value="${d.studyTour || 0}" class="w-full rounded-md border border-[#d1d5db] px-3 py-1 text-12px focus:outline-none focus:ring-1 focus:ring-green-400" /></div>
+                    <div><label class="block font-semibold text-[#1f2937] text-[13px] mb-1 select-none">Sekolah</label><input type="number" name="sekolah" value="${d.sekolah || 0}" class="w-full rounded-md border border-[#d1d5db] px-3 py-1 text-12px focus:outline-none focus:ring-1 focus:ring-green-400" /></div>
+                    <div><label class="block font-semibold text-[#1f2937] text-[13px] mb-1 select-none">Kartu Santri</label><input type="number" name="kartuSantri" value="${d.kartuSantri || 0}" class="w-full rounded-md border border-[#d1d5db] px-3 py-1 text-12px focus:outline-none focus:ring-1 focus:ring-green-400" /></div>
+                    <div><label class="block font-semibold text-[#1f2937] text-[13px] mb-1 select-none">Status</label><select name="status" class="w-full rounded-md border border-[#d1d5db] px-3 py-1 text-12px focus:outline-none focus:ring-1 focus:ring-green-400"><option value="AKTIF" ${d.status === "AKTIF" ? "selected" : ""}>Aktif</option><option value="TIDAK AKTIF" ${d.status === "TIDAK AKTIF" ? "selected" : ""}>Tidak Aktif</option></select></div>
+                </div>
+            `;
+            modalOverlay.classList.remove("hidden");
+            modalForm.querySelector("input, select, textarea")?.focus();
+            modalSubmit.dataset.mode = mode;
+            modalSubmit.dataset.index = index !== null ? index : "";
+        }
+
+        function closeModal() {
+            modalOverlay.classList.add("hidden");
+            modalForm.innerHTML = "";
+            modalSubmit.dataset.mode = "";
+            modalSubmit.dataset.index = "";
+        }
+
+        modalCancel.addEventListener("click", closeModal);
+        document.getElementById("modal-close").addEventListener("click", closeModal);
+        modalOverlay.addEventListener("click", (e) => { if (e.target === e.currentTarget) closeModal(); });
+
+        modalForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const mode = modalSubmit.dataset.mode;
+            const index = modalSubmit.dataset.index !== "" ? +modalSubmit.dataset.index : null;
+            const fd = new FormData(modalForm);
+            const newData = {
+                id: index !== null ? dataInduk[index].id : Date.now(),
+                lembaga: fd.get("lembaga"),
+                nama: fd.get("nama").trim(),
+                kelas: fd.get("kelas").trim(),
+                alamat: fd.get("alamat").trim(),
+                daftarUlang: +fd.get("daftarUlang") || 0,
+                syahriyah: +fd.get("syahriyah") || 0,
+                haflah: +fd.get("haflah") || 0,
+                seragam: +fd.get("seragam") || 0,
+                studyTour: +fd.get("studyTour") || 0,
+                sekolah: +fd.get("sekolah") || 0,
+                kartuSantri: +fd.get("kartuSantri") || 0,
+                status: fd.get("status"),
+            };
+            if (mode === "add") dataInduk.push(newData);
+            else if (mode === "edit" && index !== null) dataInduk[index] = newData;
+            saveData();
+            renderIndukTable(searchEl.value);
+            closeModal();
+        });
+
+        searchEl.addEventListener("input", () => renderIndukTable(searchEl.value));
+        document.getElementById("btn-add-induk").addEventListener("click", () => openModal("add"));
+
+        function exportExcel() {
+            const wsData = [["No", "Lembaga", "Nama", "Kelas", "Alamat", "Daftar Ulang", "Syahriyah", "Haflah", "Seragam", "Study Tour", "Sekolah", "Kartu Santri", "Status"]];
+            dataInduk.forEach((item, idx) => wsData.push([idx + 1, item.lembaga, item.nama, item.kelas, item.alamat, item.daftarUlang, item.syahriyah, item.haflah, item.seragam, item.studyTour, item.sekolah, item.kartuSantri, item.status]));
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Data Induk");
+            XLSX.writeFile(wb, "data_induk_ma_alhikam.xlsx");
+        }
+        document.getElementById("btn-export-induk").addEventListener("click", exportExcel);
+
+        function importExcel(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: "array" });
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+                const newData = jsonData.map((row, i) => ({
+                    id: i + 1,
+                    lembaga: String(row["Lembaga"] || "").trim(),
+                    nama: String(row["Nama"] || "").trim(),
+                    kelas: String(row["Kelas"] || "").trim(),
+                    alamat: String(row["Alamat"] || "").trim(),
+                    daftarUlang: +row["Daftar Ulang"] || 0,
+                    syahriyah: +row["Syahriyah"] || 0,
+                    haflah: +row["Haflah"] || 0,
+                    seragam: +row["Seragam"] || 0,
+                    studyTour: +row["Study Tour"] || 0,
+                    sekolah: +row["Sekolah"] || 0,
+                    kartuSantri: +row["Kartu Santri"] || 0,
+                    status: String(row["Status"] || "AKTIF").trim(),
+                }));
+                if (newData.length > 0) {
+                    dataInduk.length = 0;
+                    dataInduk.push(...newData);
+                    expandedRows.clear();
+                    saveData();
+                    renderIndukTable(searchEl.value);
+                    Swal.fire({
+                        title: 'Berhasil!',
+                        html: `<strong>${newData.length}</strong> data santri berhasil diimport.`,
+                        icon: 'success',
+                        confirmButtonColor: '#16a34a',
+                        confirmButtonText: 'OK'
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Gagal!',
+                        text: 'Data tidak valid atau kosong.',
+                        icon: 'error',
+                        confirmButtonColor: '#dc2626',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        document.getElementById("btn-import-induk").addEventListener("click", () => { importFileInduk.value = null; importFileInduk.click(); });
+        importFileInduk.addEventListener("change", (e) => { const file = e.target.files[0]; if (file) importExcel(file); });
+        window.addEventListener("resize", () => renderIndukTable(searchEl.value));
+        window.addEventListener("storage", (e) => { if (e.key === 'dataInduk') { dataInduk = loadData(); renderIndukTable(searchEl.value); } });
+        renderIndukTable();
+    </script>
+</body>
+
+</html>

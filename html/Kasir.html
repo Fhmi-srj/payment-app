@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MA ALHIKAM Dashboard - Kasir</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .taeb-switch {
+            display: flex;
+            background-color: #d1fae5;
+            border-radius: 0.5rem;
+            padding: 0.25rem;
+            position: relative;
+        }
+
+        .taeb-switch::after {
+            content: '';
+            position: absolute;
+            width: calc(50% - 0.25rem);
+            height: calc(100% - 0.5rem);
+            background-color: #16a34a;
+            border-radius: 0.375rem;
+            transition: all 0.3s ease;
+            top: 0.25rem;
+            left: 0.25rem;
+            z-index: 0;
+        }
+
+        .taeb-switch.right::after {
+            left: calc(50% + 0.125rem);
+        }
+
+        .taeb {
+            flex: 1;
+            text-align: center;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.75rem;
+            color: #15803d;
+            position: relative;
+            z-index: 1;
+            transition: color 0.3s ease;
+            border-radius: 0.375rem;
+        }
+
+        .taeb.active {
+            color: white;
+        }
+
+        .produk-card {
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .produk-card.active {
+            background-color: #dcfce7 !important;
+            border-color: #16a34a !important;
+            box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.3);
+        }
+
+        .produk-card.active i {
+            color: #16a34a !important;
+        }
+
+        .produk-card.lunas {
+            background-color: #f3f4f6 !important;
+            border-color: #d1d5db !important;
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .produk-card.lunas::after {
+            content: 'LUNAS';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-15deg);
+            background-color: #16a34a;
+            color: white;
+            font-size: 0.6rem;
+            font-weight: bold;
+            padding: 0.125rem 0.5rem;
+            border-radius: 0.25rem;
+        }
+
+        .suggestions-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 50;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+
+        .suggestion-item {
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .suggestion-item:hover {
+            background-color: #dcfce7;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col">
+    <header class="md:hidden mb-2">
+        <div class="flex items-center justify-between bg-[rgb(243,250,240)] p-4 shadow-md">
+            <div class="flex items-center">
+                <img alt="Logo" class="w-6 h-6 mr-2" src="https://i.imgur.com/uCLa8GP.png" />
+                <span class="font-semibold text-[#1f2937] text-lg select-none">MA ALHIKAM</span>
+            </div>
+            <button id="mobile-menu-button" class="text-[#4a4a4a]"><i
+                    class="fas fa-bars fa-lg text-green-700"></i></button>
+        </div>
+        <nav class="bg-[rgb(243,250,240)] rounded-b-[30px] p-4 space-y-2 text-[13px] hidden" id="mobile-menu">
+            <h6 class="text-[11px] font-semibold mb-2">Main Menu</h6>
+            <a href="Data Induk.html"
+                class="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-[#d1fae5] text-green-800"><i
+                    class="fas fa-database text-green-700"></i><span>Data Induk</span></a>
+            <a href="Kasir.html"
+                class="flex items-center space-x-2 px-3 py-2 rounded-lg bg-[#d1fae5] text-green-800 font-semibold"><i
+                    class="fas fa-cash-register text-green-700"></i><span>Kasir</span></a>
+            <a href="Riwayat.html"
+                class="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-[#d1fae5] text-green-800"><i
+                    class="fas fa-history text-green-700"></i><span>Riwayat</span></a>
+        </nav>
+    </header>
+    <div class="w-full flex-1 flex overflow-hidden">
+        <aside class="hidden md:flex bg-[rgb(243,250,240)] w-[220px] flex-col p-6 text-[12px] text-green-800">
+            <div class="flex items-center mb-8">
+                <img alt="Logo" class="w-6 h-6 mr-2" src="https://i.imgur.com/uCLa8GP.png" />
+                <span class="font-semibold text-green-800 text-lg">MA ALHIKAM</span>
+            </div>
+            <nav class="flex flex-col space-y-2">
+                <h6 class="text-[11px] font-semibold mb-2">Main Menu</h6>
+                <a href="Data Induk.html"
+                    class="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-white text-green-800"><i
+                        class="fas fa-database text-green-700"></i><span>Data Induk</span></a>
+                <a href="Kasir.html"
+                    class="flex items-center space-x-2 px-3 py-2 rounded-lg bg-white text-green-800 font-semibold"><i
+                        class="fas fa-cash-register text-green-700"></i><span>Kasir</span></a>
+                <a href="Riwayat.html"
+                    class="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-white text-green-800"><i
+                        class="fas fa-history text-green-700"></i><span>Riwayat</span></a>
+            </nav>
+        </aside>
+        <main class="flex-1 overflow-y-auto flex flex-col bg-transparent p-4">
+            <header class="mb-4">
+                <h1 class="text-[#1f2937] font-semibold text-lg mb-1">Halaman Kasir</h1>
+                <p class="text-[11px] text-[#6b7280]">Kelola transaksi pembayaran santri - Pembayaran akan mengurangi
+                    tagihan di Data Induk</p>
+            </header>
+
+            <!-- ROW 1: Data Santri -->
+            <div class="bg-white rounded-lg shadow p-4 mb-6">
+                <div class="flex flex-wrap items-end gap-4">
+                    <div class="flex-1 min-w-[200px]">
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Nama Santri</label>
+                        <div class="relative">
+                            <input type="text" id="namaInput" autocomplete="off"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                placeholder="Ketik nama santri...">
+                            <button type="button" id="clearNama"
+                                class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden"><i
+                                    class="fas fa-times"></i></button>
+                            <div id="suggestions" class="suggestions-list hidden"></div>
+                        </div>
+                    </div>
+                    <div class="w-28">
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Kelas</label>
+                        <input type="text" id="kelasInput"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50" readonly>
+                    </div>
+                    <div class="flex-1 min-w-[150px]">
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Alamat</label>
+                        <input type="text" id="alamatInput"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50" readonly>
+                    </div>
+                    <div class="w-32">
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Lembaga</label>
+                        <input type="text" id="lembagaInput"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50" readonly>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ROW 2: Three Columns -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                <!-- COLUMN 1: Tagihan Tambahan -->
+                <div class="lg:col-span-3">
+                    <div class="bg-white rounded-lg shadow p-4 h-full">
+                        <h2 class="text-base font-semibold text-gray-800 mb-3 pb-2 border-b"><i
+                                class="fas fa-receipt mr-2 text-green-600"></i>Tagihan Tambahan</h2>
+                        <div class="grid grid-cols-2 gap-2" id="tagihanTambahanContainer"></div>
+                    </div>
+                </div>
+
+                <!-- COLUMN 2: Tagihan Bulanan -->
+                <div class="lg:col-span-5">
+                    <div class="bg-white rounded-lg shadow p-4 h-full">
+                        <h2 class="text-base font-semibold text-gray-800 mb-3 pb-2 border-b"><i
+                                class="fas fa-calendar-alt mr-2 text-green-600"></i>Tagihan Bulanan</h2>
+                        <div class="taeb-switch left mb-3" id="tabSwitch">
+                            <div class="taeb active" data-direction="left" data-tab="syahriyah"><i
+                                    class="fas fa-mosque mr-1"></i>SYAHRIYAH</div>
+                            <div class="taeb" data-direction="right" data-tab="spp"><i
+                                    class="fas fa-school mr-1"></i>SPP SEKOLAH</div>
+                        </div>
+                        <div id="syahriyah-panel" class="tab-panel">
+                            <div class="grid grid-cols-3 sm:grid-cols-4 gap-2" id="syahriyahContainer"></div>
+                        </div>
+                        <div id="spp-panel" class="tab-panel hidden">
+                            <div class="grid grid-cols-3 sm:grid-cols-4 gap-2" id="sppContainer"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COLUMN 3: Ringkasan Pembayaran -->
+                <div class="lg:col-span-4">
+                    <div class="bg-green-50 rounded-lg shadow p-4 border border-green-200 h-full flex flex-col">
+                        <h2 class="text-base font-semibold text-green-800 mb-3 pb-2 border-b border-green-200"><i
+                                class="fas fa-calculator mr-2"></i>Ringkasan Pembayaran</h2>
+                        <ul id="summaryList" class="text-sm text-gray-700 space-y-1 flex-grow overflow-y-auto mb-3"
+                            style="max-height: 200px;">
+                            <li class="text-gray-400 italic">Pilih produk untuk melihat ringkasan</li>
+                        </ul>
+                        <div class="border-t border-green-200 pt-3 space-y-3">
+                            <div class="flex justify-between text-xl font-bold text-green-800">
+                                <span>Total</span>
+                                <span id="totalAmount">Rp0</span>
+                            </div>
+                            <div class="flex justify-between text-sm items-center">
+                                <span>Metode Pembayaran</span>
+                                <select id="metodePembayaran"
+                                    class="border border-gray-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                                    <option value="Cash">Cash</option>
+                                    <option value="Transfer">Transfer</option>
+                                </select>
+                            </div>
+                            <button type="button" id="submitBtn"
+                                class="w-full py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors">
+                                <i class="fas fa-check-circle mr-2"></i>Selesaikan Transaksi
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Default data untuk fallback
+        const defaultData = [
+            { id: 1, lembaga: "MA ALHIKAM", nama: "Suci Maulida", kelas: "VII", alamat: "", daftarUlang: 0, syahriyah: 0, haflah: 0, seragam: 0, studyTour: 0, sekolah: 0, kartuSantri: 0, status: "AKTIF" },
+            { id: 2, lembaga: "MA ALHIKAM", nama: "Nur Ifaza Kemala", kelas: "VII", alamat: "", daftarUlang: 0, syahriyah: 0, haflah: 0, seragam: 0, studyTour: 0, sekolah: 0, kartuSantri: 0, status: "AKTIF" },
+            { id: 3, lembaga: "ITS", nama: "Muhammad Yusuf", kelas: "VII", alamat: "", daftarUlang: 0, syahriyah: 0, haflah: 0, seragam: 0, studyTour: 0, sekolah: 0, kartuSantri: 0, status: "TIDAK AKTIF" },
+            { id: 4, lembaga: "ITS", nama: "Muhammad Koiyi", kelas: "VII", alamat: "", daftarUlang: 0, syahriyah: 0, haflah: 0, seragam: 0, studyTour: 0, sekolah: 0, kartuSantri: 0, status: "AKTIF" },
+            { id: 5, lembaga: "MA ALHIKAM", nama: "May Lava Seventeen", kelas: "VII", alamat: "Kedungwuni, Pekalongan", daftarUlang: 0, syahriyah: 650000, haflah: 500000, seragam: 0, studyTour: 0, sekolah: 0, kartuSantri: 0, status: "AKTIF" },
+            { id: 6, lembaga: "ITS", nama: "M. Fahmi Sirojul Munir", kelas: "VII", alamat: "", daftarUlang: 0, syahriyah: 0, haflah: 0, seragam: 0, studyTour: 0, sekolah: 0, kartuSantri: 0, status: "AKTIF" },
+            { id: 7, lembaga: "MA ALHIKAM", nama: "Jelita Alifa Putri Sutisna", kelas: "V", alamat: "Taman, Pemalang", daftarUlang: 0, syahriyah: 650000, haflah: 600000, seragam: 0, studyTour: 0, sekolah: 270000, kartuSantri: 0, status: "AKTIF" },
+            { id: 8, lembaga: "MA ALHIKAM", nama: "Hani Zufika Khoerumnisa", kelas: "VI", alamat: "Taman, Pemalang", daftarUlang: 0, syahriyah: 650000, haflah: 600000, seragam: 0, studyTour: 70000, sekolah: 100000, kartuSantri: 0, status: "AKTIF" },
+            { id: 9, lembaga: "MA ALHIKAM", nama: "Fatimatus Zahro", kelas: "VI", alamat: "Batang, Batang", daftarUlang: 0, syahriyah: 650000, haflah: 0, seragam: 0, studyTour: 70000, sekolah: 0, kartuSantri: 0, status: "AKTIF" },
+            { id: 10, lembaga: "MA ALHIKAM", nama: "Dimas Ibrahim Arhuiam", kelas: "V", alamat: "Kedungwuni, Pekalongan", daftarUlang: 0, syahriyah: 650000, haflah: 600000, seragam: 0, studyTour: 0, sekolah: 0, kartuSantri: 0, status: "AKTIF" },
+        ];
+
+        // Load data from localStorage (shared with Data Induk)
+        function loadData() {
+            const stored = localStorage.getItem('dataInduk');
+            if (stored) {
+                try {
+                    const parsed = JSON.parse(stored);
+                    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+                } catch (e) { }
+            }
+            // Initialize with default data if empty
+            localStorage.setItem('dataInduk', JSON.stringify(defaultData));
+            return [...defaultData];
+        }
+        function saveData(data) { localStorage.setItem('dataInduk', JSON.stringify(data)); }
+
+        function loadRiwayat() {
+            const stored = localStorage.getItem('riwayatTransaksi');
+            if (stored) {
+                try { return JSON.parse(stored) || []; } catch (e) { }
+            }
+            return [];
+        }
+        function saveRiwayat(data) { localStorage.setItem('riwayatTransaksi', JSON.stringify(data)); }
+
+        let dataInduk = loadData();
+
+        const baseProducts = [
+            { key: 'daftarUlang', label: 'Daftar Ulang', icon: 'fas fa-file-signature' },
+            { key: 'haflah', label: 'Haflah', icon: 'fas fa-graduation-cap' },
+            { key: 'seragam', label: 'Seragam', icon: 'fas fa-tshirt' },
+            { key: 'studyTour', label: 'Study Tour', icon: 'fas fa-bus' },
+            { key: 'kartuSantri', label: 'Kartu Santri', icon: 'fas fa-id-card' },
+        ];
+        const bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+        const formatIDR = (num) => 'Rp' + parseInt(num || 0).toLocaleString('id-ID');
+        const parseIDR = (str) => parseInt(String(str).replace(/[^\d]/g, '')) || 0;
+
+        const mobileMenuButton = document.getElementById("mobile-menu-button");
+        const mobileMenu = document.getElementById("mobile-menu");
+        const namaInput = document.getElementById('namaInput');
+        const suggestions = document.getElementById('suggestions');
+        const clearBtn = document.getElementById('clearNama');
+        const kelasInput = document.getElementById('kelasInput');
+        const alamatInput = document.getElementById('alamatInput');
+        const lembagaInput = document.getElementById('lembagaInput');
+        const summaryList = document.getElementById('summaryList');
+        const totalAmount = document.getElementById('totalAmount');
+        const submitBtn = document.getElementById('submitBtn');
+
+        let selectedSantri = null;
+        let selectedSantriIndex = -1;
+
+        mobileMenuButton.addEventListener("click", () => mobileMenu.classList.toggle("hidden"));
+
+        // Initialize product cards
+        function initCards() {
+            const tagihanContainer = document.getElementById('tagihanTambahanContainer');
+            tagihanContainer.innerHTML = '';
+            baseProducts.forEach(prod => {
+                const card = document.createElement('div');
+                card.className = 'produk-card flex flex-col items-center border rounded-lg p-2 cursor-pointer bg-white border-gray-200 hover:border-green-400 hover:bg-green-50 transition-all text-center';
+                card.dataset.produk = prod.key;
+                card.dataset.type = 'tambahan';
+                card.innerHTML = `
+                    <i class="${prod.icon} text-gray-400 text-lg mb-1"></i>
+                    <span class="text-xs font-medium mb-1">${prod.label}</span>
+                    <div class="text-xs text-red-600 font-semibold tagihan-amount">Rp0</div>
+                    <input type="text" inputmode="numeric" class="w-full text-center rounded px-1 py-1 bg-gray-100 border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-green-500 mt-1" placeholder="Bayar" readonly>
+                `;
+                tagihanContainer.appendChild(card);
+            });
+
+            const syahriyahContainer = document.getElementById('syahriyahContainer');
+            syahriyahContainer.innerHTML = '';
+            bulan.forEach((b, idx) => {
+                const card = document.createElement('div');
+                card.className = 'produk-card month-card flex flex-col items-center border rounded-lg p-2 cursor-pointer bg-white border-gray-200 hover:border-green-400 hover:bg-green-50 transition-all text-center';
+                card.dataset.produk = 'syahriyah';
+                card.dataset.bulan = idx;
+                card.dataset.type = 'bulanan';
+                card.innerHTML = `
+                    <span class="text-xs font-medium mb-1">${b}</span>
+                    <div class="text-xs text-red-600 font-semibold tagihan-amount">Rp0</div>
+                    <input type="text" inputmode="numeric" class="w-full text-center rounded px-1 py-1 bg-gray-100 border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-green-500 mt-1" placeholder="Bayar" readonly>
+                `;
+                syahriyahContainer.appendChild(card);
+            });
+
+            const sppContainer = document.getElementById('sppContainer');
+            sppContainer.innerHTML = '';
+            bulan.forEach((b, idx) => {
+                const card = document.createElement('div');
+                card.className = 'produk-card month-card spp-card flex flex-col items-center border rounded-lg p-2 cursor-pointer bg-white border-gray-200 hover:border-green-400 hover:bg-green-50 transition-all text-center';
+                card.dataset.produk = 'sekolah';
+                card.dataset.bulan = idx;
+                card.dataset.type = 'bulanan';
+                card.innerHTML = `
+                    <span class="text-xs font-medium mb-1">${b}</span>
+                    <div class="text-xs text-red-600 font-semibold tagihan-amount">Rp0</div>
+                    <input type="text" inputmode="numeric" class="w-full text-center rounded px-1 py-1 bg-gray-100 border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-green-500 mt-1" placeholder="Bayar" readonly>
+                `;
+                sppContainer.appendChild(card);
+            });
+
+            document.querySelectorAll('.produk-card').forEach(card => {
+                card.addEventListener('click', function (e) {
+                    if (e.target.tagName === 'INPUT') return;
+                    if (this.classList.contains('lunas')) return;
+                    if (!selectedSantri) {
+                        Swal.fire({
+                            title: 'Pilih Santri',
+                            text: 'Pilih nama santri terlebih dahulu sebelum memilih produk.',
+                            icon: 'warning',
+                            confirmButtonColor: '#16a34a',
+                            confirmButtonText: 'OK'
+                        });
+                        return;
+                    }
+                    this.classList.toggle('active');
+                    const input = this.querySelector('input');
+                    const tagihanEl = this.querySelector('.tagihan-amount');
+                    const tagihan = parseIDR(tagihanEl.textContent);
+                    if (this.classList.contains('active')) {
+                        input.value = tagihan.toLocaleString('id-ID');
+                        input.removeAttribute('readonly');
+                    } else {
+                        input.value = '';
+                        input.setAttribute('readonly', true);
+                    }
+                    updateSummary();
+                });
+                const input = card.querySelector('input');
+                if (input) {
+                    input.addEventListener('input', function (e) {
+                        let val = e.target.value.replace(/\D/g, '');
+                        e.target.value = val ? parseInt(val).toLocaleString('id-ID') : '';
+                        if (val && parseInt(val) > 0) card.classList.add('active'); else card.classList.remove('active');
+                        updateSummary();
+                    });
+                    input.addEventListener('focus', function () {
+                        if (!selectedSantri) {
+                            Swal.fire({
+                                title: 'Pilih Santri',
+                                text: 'Pilih nama santri terlebih dahulu.',
+                                icon: 'warning',
+                                confirmButtonColor: '#16a34a',
+                                confirmButtonText: 'OK'
+                            });
+                            this.blur();
+                        }
+                    });
+                }
+            });
+        }
+
+        // Tab Switch
+        const tabSwitch = document.getElementById('tabSwitch');
+        tabSwitch.querySelectorAll('.taeb').forEach(tab => {
+            tab.addEventListener('click', function () {
+                tabSwitch.classList.remove('left', 'right');
+                tabSwitch.classList.add(this.dataset.direction);
+                tabSwitch.querySelectorAll('.taeb').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+                document.getElementById(this.dataset.tab + '-panel').classList.remove('hidden');
+            });
+        });
+
+        // Autocomplete - FIXED VERSION
+        namaInput.addEventListener('input', function () {
+            const q = this.value.toLowerCase().trim();
+            clearBtn.classList.toggle('hidden', !this.value);
+
+            if (q.length < 1) {
+                suggestions.classList.add('hidden');
+                return;
+            }
+
+            // Reload data to get latest
+            dataInduk = loadData();
+
+            // Filter only AKTIF status and matching names
+            const matches = dataInduk.filter(s =>
+                s.nama.toLowerCase().includes(q) &&
+                s.status && s.status.toUpperCase() === 'AKTIF'
+            );
+
+            if (matches.length === 0) {
+                suggestions.innerHTML = '<div class="p-3 text-gray-500 text-center">Tidak ada hasil ditemukan</div>';
+                suggestions.classList.remove('hidden');
+                return;
+            }
+
+            suggestions.innerHTML = matches.map(s =>
+                `<div class="suggestion-item" data-id="${s.id}">
+                    <div class="font-medium text-gray-800">${s.nama}</div>
+                    <div class="text-xs text-gray-500">${s.lembaga || '-'} - Kelas ${s.kelas || '-'}</div>
+                </div>`
+            ).join('');
+
+            suggestions.classList.remove('hidden');
+
+            // Attach click events
+            suggestions.querySelectorAll('.suggestion-item').forEach(item => {
+                item.addEventListener('click', function () {
+                    selectSantri(parseInt(this.dataset.id));
+                });
+            });
+        });
+
+        namaInput.addEventListener('focus', function () {
+            if (this.value.length > 0) {
+                // Trigger input event to show suggestions
+                this.dispatchEvent(new Event('input'));
+            }
+        });
+
+        function selectSantri(id) {
+            // Reload data to get latest
+            dataInduk = loadData();
+
+            const idx = dataInduk.findIndex(d => d.id === id);
+            if (idx === -1) {
+                console.error('Santri not found:', id);
+                return;
+            }
+
+            const s = dataInduk[idx];
+            selectedSantri = s;
+            selectedSantriIndex = idx;
+
+            namaInput.value = s.nama;
+            kelasInput.value = s.kelas || '-';
+            alamatInput.value = s.alamat || '-';
+            lembagaInput.value = s.lembaga || '-';
+            clearBtn.classList.remove('hidden');
+            suggestions.classList.add('hidden');
+
+            // Reset and update all cards
+            document.querySelectorAll('.produk-card').forEach(card => {
+                card.classList.remove('active', 'lunas');
+                const input = card.querySelector('input');
+                const tagihanEl = card.querySelector('.tagihan-amount');
+                input.value = '';
+                input.setAttribute('readonly', true);
+
+                const key = card.dataset.produk;
+                const type = card.dataset.type;
+
+                if (type === 'tambahan') {
+                    const tagihan = s[key] || 0;
+                    tagihanEl.textContent = formatIDR(tagihan);
+                    if (tagihan <= 0) {
+                        card.classList.add('lunas');
+                        tagihanEl.textContent = 'LUNAS';
+                        tagihanEl.classList.remove('text-red-600');
+                        tagihanEl.classList.add('text-green-600');
+                    } else {
+                        tagihanEl.classList.add('text-red-600');
+                        tagihanEl.classList.remove('text-green-600');
+                    }
+                } else if (type === 'bulanan') {
+                    // Fixed monthly rate: Syahriyah 600rb, SPP Sekolah 50rb
+                    const totalTagihan = s[key] || 0;
+                    let perBulan = key === 'syahriyah' ? 600000 : 50000;
+
+                    // If total tagihan is 0, mark as LUNAS
+                    if (totalTagihan <= 0) {
+                        card.classList.add('lunas');
+                        tagihanEl.textContent = 'LUNAS';
+                        tagihanEl.classList.remove('text-red-600');
+                        tagihanEl.classList.add('text-green-600');
+                    } else {
+                        tagihanEl.textContent = formatIDR(perBulan);
+                        tagihanEl.classList.add('text-red-600');
+                        tagihanEl.classList.remove('text-green-600');
+                    }
+                }
+            });
+            updateSummary();
+        }
+
+        clearBtn.addEventListener('click', function () {
+            namaInput.value = '';
+            kelasInput.value = '';
+            alamatInput.value = '';
+            lembagaInput.value = '';
+            clearBtn.classList.add('hidden');
+            selectedSantri = null;
+            selectedSantriIndex = -1;
+            suggestions.classList.add('hidden');
+
+            document.querySelectorAll('.produk-card').forEach(card => {
+                card.classList.remove('active', 'lunas');
+                const input = card.querySelector('input');
+                const tagihanEl = card.querySelector('.tagihan-amount');
+                input.value = '';
+                input.setAttribute('readonly', true);
+                tagihanEl.textContent = 'Rp0';
+                tagihanEl.classList.add('text-red-600');
+                tagihanEl.classList.remove('text-green-600');
+            });
+            updateSummary();
+        });
+
+        function updateSummary() {
+            const items = [];
+            let total = 0;
+            document.querySelectorAll('.produk-card.active').forEach(card => {
+                const produk = card.dataset.produk;
+                const type = card.dataset.type;
+                const bulanIdx = card.dataset.bulan;
+                const nominal = parseIDR(card.querySelector('input').value);
+                if (nominal > 0) {
+                    let label = produk;
+                    if (type === 'bulanan' && bulanIdx !== undefined) {
+                        label = `${produk === 'syahriyah' ? 'Syahriyah' : 'SPP'} ${bulan[bulanIdx]}`;
+                    } else {
+                        label = baseProducts.find(p => p.key === produk)?.label || produk;
+                    }
+                    items.push({ produk, bulanIdx, nominal, label, type });
+                    total += nominal;
+                }
+            });
+            summaryList.innerHTML = items.length === 0 ? '<li class="text-gray-400 italic">Pilih produk untuk melihat ringkasan</li>' : items.map(i => `<li class="flex justify-between bg-green-100 rounded px-2 py-1"><span class="truncate mr-2">${i.label}</span><span class="font-medium whitespace-nowrap">${formatIDR(i.nominal)}</span></li>`).join('');
+            totalAmount.textContent = formatIDR(total);
+        }
+
+        submitBtn.addEventListener('click', function () {
+            if (!selectedSantri || selectedSantriIndex === -1) {
+                Swal.fire({
+                    title: 'Pilih Santri',
+                    text: 'Pilih nama santri terlebih dahulu.',
+                    icon: 'warning',
+                    confirmButtonColor: '#16a34a',
+                    confirmButtonText: 'OK'
+                });
+                return;
+            }
+            const total = parseIDR(totalAmount.textContent);
+            if (total <= 0) {
+                Swal.fire({
+                    title: 'Total Kosong',
+                    text: 'Total pembayaran harus lebih dari 0.',
+                    icon: 'warning',
+                    confirmButtonColor: '#16a34a',
+                    confirmButtonText: 'OK'
+                });
+                return;
+            }
+
+            // Reload data to ensure we have latest
+            dataInduk = loadData();
+
+            // Find santri index again in case data changed
+            const santriIdx = dataInduk.findIndex(d => d.id === selectedSantri.id);
+            if (santriIdx === -1) {
+                Swal.fire({
+                    title: 'Data Tidak Ditemukan',
+                    text: 'Data santri tidak ditemukan. Silakan pilih ulang.',
+                    icon: 'error',
+                    confirmButtonColor: '#dc2626',
+                    confirmButtonText: 'OK'
+                });
+                clearBtn.click();
+                return;
+            }
+
+            // Update tagihan in dataInduk
+            document.querySelectorAll('.produk-card.active').forEach(card => {
+                const produk = card.dataset.produk;
+                const type = card.dataset.type;
+                const nominal = parseIDR(card.querySelector('input').value);
+
+                if (type === 'tambahan') {
+                    // Reduce the tagihan
+                    dataInduk[santriIdx][produk] = Math.max(0, (dataInduk[santriIdx][produk] || 0) - nominal);
+                } else if (type === 'bulanan') {
+                    // For monthly, reduce proportionally
+                    dataInduk[santriIdx][produk] = Math.max(0, (dataInduk[santriIdx][produk] || 0) - nominal);
+                }
+            });
+
+            // Save to localStorage
+            saveData(dataInduk);
+
+            // Collect items for riwayat
+            const riwayatItems = [];
+            document.querySelectorAll('.produk-card.active').forEach(card => {
+                const label = card.querySelector('.text-green-800, .text-gray-500')?.textContent || card.dataset.produk;
+                const nominal = parseIDR(card.querySelector('input').value);
+                if (nominal > 0) {
+                    riwayatItems.push({ nama: label, nominal });
+                }
+            });
+
+            // Save to Riwayat
+            const riwayat = loadRiwayat();
+            riwayat.push({
+                id: Date.now(),
+                tanggal: new Date().toISOString(),
+                santriId: selectedSantri.id,
+                santriNama: selectedSantri.nama,
+                lembaga: selectedSantri.lembaga,
+                jenis: 'PEMBAYARAN',
+                items: riwayatItems,
+                total: total,
+                metode: document.getElementById('metodePembayaran').value
+            });
+            saveRiwayat(riwayat);
+
+            Swal.fire({
+                title: '<i class="fas fa-check-circle text-green-500"></i> Transaksi Berhasil!',
+                html: `
+                    <div class="text-left p-4 bg-gray-50 rounded-lg mt-3">
+                        <div class="flex justify-between py-2 border-b">
+                            <span class="text-gray-600">Santri:</span>
+                            <span class="font-semibold">${selectedSantri.nama}</span>
+                        </div>
+                        <div class="flex justify-between py-2 border-b">
+                            <span class="text-gray-600">Lembaga:</span>
+                            <span class="font-semibold">${selectedSantri.lembaga}</span>
+                        </div>
+                        <div class="flex justify-between py-2 border-b">
+                            <span class="text-gray-600">Metode:</span>
+                            <span class="font-semibold">${document.getElementById('metodePembayaran').value}</span>
+                        </div>
+                        <div class="flex justify-between py-2 text-lg">
+                            <span class="text-gray-600 font-semibold">Total:</span>
+                            <span class="font-bold text-green-600">${formatIDR(total)}</span>
+                        </div>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-3"><i class="fas fa-sync-alt mr-1"></i> Data Induk & Riwayat telah diperbarui.</p>
+                `,
+                icon: 'success',
+                confirmButtonColor: '#16a34a',
+                confirmButtonText: '<i class="fas fa-check mr-1"></i> Selesai'
+            });
+
+            // Reload data and reset form
+            dataInduk = loadData();
+            clearBtn.click();
+        });
+
+        // Close suggestions when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!namaInput.contains(e.target) && !suggestions.contains(e.target)) {
+                suggestions.classList.add('hidden');
+            }
+        });
+
+        // Listen for storage changes from Data Induk
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'dataInduk') {
+                dataInduk = loadData();
+                if (selectedSantri) selectSantri(selectedSantri.id);
+            }
+        });
+
+        // Initialize
+        initCards();
+
+        // Debug: Log data on load
+        console.log('Data Induk loaded:', dataInduk.length, 'records');
+    </script>
+</body>
+
+</html>

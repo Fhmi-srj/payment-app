@@ -1,0 +1,22 @@
+{
+    "name": "Nurul Huda Payment",
+    "short_name": "NH Payment",
+    "description": "Sistem Pembayaran Pondok Pesantren Nurul Huda An-Najjah",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#16a34a",
+    "icons": [
+        {
+            "src": "/logo pondok.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/logo pondok.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

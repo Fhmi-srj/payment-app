@@ -34,6 +34,8 @@ class RiwayatController extends Controller
             $query->whereDate('tanggal', '<=', $request->sampai_tanggal);
         }
 
+        $query->where('metode', '!=', 'Pemutihan');
+
         $transaksis = $query->orderBy('tanggal', 'desc')->get();
 
         return response()->json([
@@ -69,6 +71,8 @@ class RiwayatController extends Controller
         if ($request->filled('sampai_tanggal')) {
             $query->whereDate('tanggal', '<=', $request->sampai_tanggal);
         }
+
+        $query->where('metode', '!=', 'Pemutihan');
 
         $transaksis = $query->orderBy('tanggal', 'desc')->get();
 

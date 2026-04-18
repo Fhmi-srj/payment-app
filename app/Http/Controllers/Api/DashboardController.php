@@ -20,9 +20,9 @@ class DashboardController extends Controller
         $santriNonaktif = Santri::where('status', 'TIDAK AKTIF')->count();
 
         // Pemasukan
-        $pemasukanHariIni = Transaksi::whereDate('tanggal', $now->toDateString())->sum('total');
-        $pemasukanBulanIni = Transaksi::whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->sum('total');
-        $pemasukanTahunIni = Transaksi::whereYear('tanggal', $now->year)->sum('total');
+        $pemasukanHariIni = Transaksi::where('metode', '!=', 'Pemutihan')->whereDate('tanggal', $now->toDateString())->sum('total');
+        $pemasukanBulanIni = Transaksi::where('metode', '!=', 'Pemutihan')->whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->sum('total');
+        $pemasukanTahunIni = Transaksi::where('metode', '!=', 'Pemutihan')->whereYear('tanggal', $now->year)->sum('total');
 
         // Total tunggakan (sum of all remaining tagihan across active santri)
         $moneyFields = ['daftar_ulang', 'syahriyah', 'haflah', 'seragam', 'study_tour', 'sekolah', 'kartu_santri'];
@@ -61,6 +61,7 @@ class DashboardController extends Controller
 
         // Pemasukan per lembaga
         $pemasukanPerLembaga = Transaksi::join('santris', 'transaksis.santri_id', '=', 'santris.id')
+            ->where('transaksis.metode', '!=', 'Pemutihan')
             ->whereMonth('transaksis.tanggal', $now->month)
             ->whereYear('transaksis.tanggal', $now->year)
             ->select('santris.lembaga', DB::raw('SUM(transaksis.total) as total'))
@@ -69,7 +70,8 @@ class DashboardController extends Controller
             ->map(fn($row) => ['lembaga' => $row->lembaga, 'total' => (int) $row->total]);
 
         // Transaksi count bulan ini
-        $transaksiCountBulanIni = Transaksi::whereMonth('tanggal', $now->month)
+        $transaksiCountBulanIni = Transaksi::where('metode', '!=', 'Pemutihan')
+            ->whereMonth('tanggal', $now->month)
             ->whereYear('tanggal', $now->year)
             ->count();
 
@@ -80,7 +82,8 @@ class DashboardController extends Controller
         $chartBulanan = [];
         for ($i = 11; $i >= 0; $i--) {
             $month = $now->copy()->subMonths($i);
-            $amount = Transaksi::whereMonth('tanggal', $month->month)
+            $amount = Transaksi::where('metode', '!=', 'Pemutihan')
+                ->whereMonth('tanggal', $month->month)
                 ->whereYear('tanggal', $month->year)
                 ->sum('total');
             $chartBulanan[] = [
@@ -91,7 +94,8 @@ class DashboardController extends Controller
         }
 
         // 5 transaksi terbaru
-        $transaksiTerbaru = Transaksi::with(['santri:id,nama,lembaga', 'items:id,transaksi_id,nama,nominal'])
+        $transaksiTerbaru = Transaksi::where('metode', '!=', 'Pemutihan')
+            ->with(['santri:id,nama,lembaga', 'items:id,transaksi_id,nama,nominal'])
             ->orderBy('tanggal', 'desc')
             ->limit(5)
             ->get()

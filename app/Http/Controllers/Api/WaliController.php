@@ -82,6 +82,7 @@ class WaliController extends Controller
 
         // Get payment history
         $riwayat = $santri->transaksis()
+            ->where('metode', '!=', 'Pemutihan')
             ->with('items:id,transaksi_id,nama,nominal,bulan')
             ->orderBy('tanggal', 'desc')
             ->limit(20)

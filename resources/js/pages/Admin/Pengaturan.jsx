@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { API_BASE, authFetch } from '../../config/api';
 import { useTahunAjaran } from '../../contexts/TahunAjaranContext';
 import Swal from 'sweetalert2';
@@ -216,6 +217,11 @@ function ProfilPondok() {
 function JenisTagihan() {
     const [tagihanSettings, setTagihanSettings] = useState({});
     const [loading, setLoading] = useState(true);
+    
+    // Modal state
+    const [showModal, setShowModal] = useState(false);
+    const [modalTab, setModalTab] = useState('keep'); // 'keep' or 'reset'
+    const [isSaving, setIsSaving] = useState(false);
 
     // Load settings from API
     useEffect(() => {
@@ -242,53 +248,54 @@ function JenisTagihan() {
         }));
     };
 
-    const handleSave = async () => {
-        const result = await Swal.fire({
-            title: 'Terapkan Perubahan?',
-            text: 'Ini akan menyimpan pengaturan, dan menyinkronkan nominal ke SELURUH DATA SANTRI AKTIF. Semua tagihan akan langsung diubah ke nominal baru tanpa terkecuali.',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#16a34a',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Ya, Simpan & Terapkan!'
-        });
+    const handleSaveClick = () => {
+        setShowModal(true);
+        setModalTab('keep'); // Default safe option
+    };
 
-        if (result.isConfirmed) {
-            try {
-                // 1. Save settings to database
-                const saveRes = await authFetch(`${API_BASE}/settings/tagihan`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ settings: tagihanSettings })
-                });
-                const saveJson = await saveRes.json();
-                if (!saveJson.success) {
-                    Swal.fire('Gagal', saveJson.message || 'Gagal menyimpan pengaturan', 'error');
-                    return;
-                }
-
-                // 2. Sync nominal to all santri
-                const syncRes = await authFetch(`${API_BASE}/santri/bulk-tagihan`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ settings: tagihanSettings })
-                });
-
-                const syncJson = await syncRes.json();
-                if (syncJson.success) {
-                    Swal.fire({ 
-                        icon: 'success', 
-                        title: 'Berhasil!', 
-                        text: 'Nominal berhasil disimpan dan disinkronisasi ke seluruh Data Santri Aktif.', 
-                        timer: 2000, 
-                        showConfirmButton: false 
-                    });
-                } else {
-                    Swal.fire('Gagal', syncJson.message || 'Gagal menyinkronisasi tagihan', 'error');
-                }
-            } catch (error) {
-                Swal.fire('Error', 'Terjadi kesalahan koneksi ke server', 'error');
+    const handleProceedSave = async () => {
+        setIsSaving(true);
+        const updateMode = modalTab;
+        
+        try {
+            // 1. Save settings to database
+            const saveRes = await authFetch(`${API_BASE}/settings/tagihan`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ settings: tagihanSettings, update_mode: updateMode })
+            });
+            const saveJson = await saveRes.json();
+            if (!saveJson.success) {
+                Swal.fire('Gagal', saveJson.message || 'Gagal menyimpan pengaturan', 'error');
+                setIsSaving(false);
+                return;
             }
+
+            // 2. Sync nominal to all santri
+            const syncRes = await authFetch(`${API_BASE}/santri/bulk-tagihan`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ settings: tagihanSettings, update_mode: updateMode })
+            });
+
+            const syncJson = await syncRes.json();
+            if (syncJson.success) {
+                setShowModal(false);
+                Swal.fire({ 
+                    icon: 'success', 
+                    title: 'Berhasil!', 
+                    text: `Nominal berhasil disimpan dan disinkronisasi ke seluruh santri (Mode: ${updateMode === 'reset' ? 'Reset Data' : 'Penyesuaian'}).`, 
+                    timer: 2500, 
+                    showConfirmButton: false 
+                });
+            } else {
+                Swal.fire('Gagal', syncJson.message || 'Gagal menyinkronisasi tagihan', 'error');
+            }
+        } catch (error) {
+            console.error(error);
+            Swal.fire('Error', 'Terjadi kesalahan koneksi ke server', 'error');
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -301,7 +308,7 @@ function JenisTagihan() {
     }
 
     return (
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow p-6 relative">
             <h2 className="text-sm font-semibold text-gray-800 mb-4"><i className="fas fa-list mr-2 text-green-600"></i>Jenis & Nominal Default Tagihan</h2>
             <p className="text-xs text-gray-500 mb-4">Daftar jenis tagihan beserta nominal default yang akan digunakan sebagai basis tagihan bagi semua santri.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -369,10 +376,86 @@ function JenisTagihan() {
                 })}
             </div>
             <div className="flex justify-end">
-                <button onClick={handleSave} className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 shadow flex items-center transition">
-                    <i className="fas fa-save mr-2"></i>Simpan Perubahan
+                <button onClick={handleSaveClick} className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 shadow flex items-center transition">
+                    <i className="fas fa-cog mr-2"></i>Simpan Perubahan
                 </button>
             </div>
+
+            {/* Custom Modal with Tabs */}
+            {showModal && createPortal(
+                <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-transparent backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-xl shadow-[0_0_40px_rgba(0,0,0,0.1)] border border-gray-200 w-full max-w-xl overflow-hidden animate-fade-in-up">
+                        <div className="px-6 py-4 border-b flex justify-between items-center bg-gray-50">
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-800">Terapkan Pembaruan Nominal?</h3>
+                                <p className="text-xs text-gray-500 mt-0.5">Pilih metode penerapan ke data santri</p>
+                            </div>
+                            <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200">
+                                <i className="fas fa-times"></i>
+                            </button>
+                        </div>
+                        
+                        <div className="p-6">
+                            
+                            <div className="flex border-b border-gray-200 mb-5 relative">
+                                <button 
+                                    onClick={() => setModalTab('keep')}
+                                    className={`flex-1 py-3 text-sm font-semibold border-b-2 transition-all duration-200 relative ${modalTab === 'keep' ? 'border-green-600 text-green-700 bg-green-50/50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
+                                    <i className="fas fa-shield-alt mr-2"></i>Opsi 1: Penyesuaian (Aman)
+                                </button>
+                                <button 
+                                    onClick={() => setModalTab('reset')}
+                                    className={`flex-1 py-3 text-sm font-semibold border-b-2 transition-all duration-200 relative ${modalTab === 'reset' ? 'border-red-600 text-red-700 bg-red-50/50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
+                                    <i className="fas fa-history mr-2"></i>Opsi 2: Reset Data
+                                </button>
+                            </div>
+
+                            <div className={`p-4 rounded-lg border shadow-sm min-h-[140px] transition-all duration-300 ${modalTab === 'keep' ? 'bg-green-50/50 border-green-100' : 'bg-red-50/50 border-red-100'}`}>
+                                {modalTab === 'keep' ? (
+                                    <div className="text-sm text-gray-600 leading-relaxed">
+                                        <div className="flex items-start gap-3">
+                                            <div className="mt-0.5 w-8 h-8 shrink-0 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
+                                                <i className="fas fa-check"></i>
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-gray-800 mb-1">Pertahankan Riwayat Transaksi</p>
+                                                <p>Sistem akan memperbarui nominal baru ke semua santri namun <strong>menjaga agar riwayat lama mereka tidak terganggu</strong>.</p>
+                                                <div className="mt-3 p-3 bg-white rounded border border-green-200 text-green-800 text-xs shadow-sm">
+                                                    <i className="fas fa-info-circle mr-1"></i> Jika harga naik, santri yang pernah melakukan pembayaran akan dijamin terkunci sisa hutangnya berkat fitur <em>Pemutihan Sistem</em> otomatis.
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-sm text-gray-600 leading-relaxed">
+                                        <div className="flex items-start gap-3">
+                                            <div className="mt-0.5 w-8 h-8 shrink-0 bg-red-100 text-red-600 rounded-full flex items-center justify-center">
+                                                <i className="fas fa-exclamation-triangle"></i>
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-gray-800 mb-1">Hapus Riwayat & Tulis Ulang Target</p>
+                                                <p>Sistem akan <strong>menghapus seluruh item transaksi ini</strong> dari data santri dan me-reset persentase tagihan mereka kembali ke mentah dengan nominal terbaru.</p>
+                                                <div className="mt-3 p-3 bg-white rounded border border-red-200 text-red-800 text-xs shadow-sm font-medium">
+                                                    <i className="fas fa-hand-paper mr-1"></i> Peringatan: Santri yang bersetatus Lunas bisa menjadi Nunggak kembali. Sangat disarankan hanya digunakan pada awal Tahun Ajaran Baru.
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3 items-center">
+                            <button onClick={() => setShowModal(false)} className="px-5 py-2.5 bg-white border border-gray-300 font-medium text-gray-700 rounded-lg text-sm hover:bg-gray-100 transition-colors">Batal</button>
+                            <button disabled={isSaving} onClick={handleProceedSave} className={`px-5 py-2.5 text-white font-medium rounded-lg text-sm flex items-center shadow-md transition-all duration-200 ${modalTab === 'keep' ? 'bg-green-600 hover:bg-green-700 shadow-green-600/30' : 'bg-red-600 hover:bg-red-700 shadow-red-600/30'} disabled:opacity-70 disabled:shadow-none`}>
+                                {isSaving ? <i className="fas fa-spinner fa-spin mr-2"></i> : <i className="fas fa-paper-plane mr-2"></i>}
+                                {isSaving ? 'Menyimpan...' : (modalTab === 'keep' ? 'Terapkan Penyesuaian' : 'Mengerti, Lakukan Reset')}
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
         </div>
     );
 }

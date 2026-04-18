@@ -119,6 +119,7 @@ class TagihanController extends Controller
 
         // Get payment history for this santri
         $riwayat = $santri->transaksis()
+            ->where('metode', '!=', 'Pemutihan')
             ->with('items')
             ->orderBy('tanggal', 'desc')
             ->limit(10)

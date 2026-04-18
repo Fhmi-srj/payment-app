@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { API_BASE, authFetch } from '../../config/api';
 import Swal from 'sweetalert2';
 
@@ -439,7 +440,7 @@ function Kasir() {
             )}
 
             {/* Hidden Thermal Receipt - only visible during print */}
-            {receiptData && (
+            {receiptData && createPortal(
                 <div id="thermal-receipt" className="thermal-receipt">
                     <div className="receipt-header">
                         <div className="receipt-title">{receiptData.namaPondok}</div>
@@ -478,7 +479,8 @@ function Kasir() {
                         <div>Semoga Allah membalas kebaikan Anda</div>
                         <div style={{marginTop: '4px', fontSize: '8px'}}>*** Struk ini adalah bukti pembayaran sah ***</div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </>
     );

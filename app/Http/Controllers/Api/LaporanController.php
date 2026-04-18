@@ -38,6 +38,9 @@ class LaporanController extends Controller
             $query->whereDate('tanggal', '<=', $request->sampai_tanggal);
         }
 
+        // Hide Pemutihan transactions from reports
+        $query->where('metode', '!=', 'Pemutihan');
+
         $transaksis = $query->orderBy('tanggal', 'desc')->get();
 
         // Group by period
@@ -77,6 +80,7 @@ class LaporanController extends Controller
             ->join('transaksis', 'transaksi_items.transaksi_id', '=', 'transaksis.id')
             ->when($request->filled('dari_tanggal'), fn($q) => $q->whereDate('transaksis.tanggal', '>=', $request->dari_tanggal))
             ->when($request->filled('sampai_tanggal'), fn($q) => $q->whereDate('transaksis.tanggal', '<=', $request->sampai_tanggal))
+            ->where('transaksis.metode', '!=', 'Pemutihan')
             ->select('transaksi_items.nama', DB::raw('SUM(transaksi_items.nominal) as total'), DB::raw('COUNT(*) as jumlah'))
             ->groupBy('transaksi_items.nama')
             ->orderByDesc('total')
@@ -106,6 +110,9 @@ class LaporanController extends Controller
         if ($request->filled('sampai_tanggal')) {
             $query->whereDate('tanggal', '<=', $request->sampai_tanggal);
         }
+
+        // Hide Pemutihan transactions from export
+        $query->where('metode', '!=', 'Pemutihan');
 
         $transaksis = $query->orderBy('tanggal', 'desc')->get();
 

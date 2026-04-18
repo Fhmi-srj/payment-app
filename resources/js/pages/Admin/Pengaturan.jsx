@@ -215,24 +215,21 @@ function ProfilPondok() {
 
 function JenisTagihan() {
     const [tagihanSettings, setTagihanSettings] = useState({});
-    const [saved, setSaved] = useState(false);
+    const [loading, setLoading] = useState(true);
 
+    // Load settings from API
     useEffect(() => {
-        const savedData = localStorage.getItem('tagihan_settings');
-        if (savedData) {
-            setTagihanSettings(JSON.parse(savedData));
-        } else {
-            // Ambil dari prev storage jika ada
-            const oldNominals = JSON.parse(localStorage.getItem('nominal_default_tagihan') || '{}');
-            const initial = {};
-            defaultTagihan.forEach(item => {
-                initial[item.key] = {
-                    nominal: oldNominals[item.key] || '',
-                    aktif: true
-                };
-            });
-            setTagihanSettings(initial);
-        }
+        const loadSettings = async () => {
+            try {
+                const res = await authFetch(`${API_BASE}/settings/tagihan`);
+                const json = await res.json();
+                if (json.success && json.data) {
+                    setTagihanSettings(json.data);
+                }
+            } catch (e) { console.error('Failed to load tagihan settings:', e); }
+            finally { setLoading(false); }
+        };
+        loadSettings();
     }, []);
 
     const handleChange = (key, field, value) => {
@@ -248,7 +245,7 @@ function JenisTagihan() {
     const handleSave = async () => {
         const result = await Swal.fire({
             title: 'Terapkan Perubahan?',
-            text: 'Ini akan menyimpan pengaturan, dan menyinkronkan nominal ke SELURUH DATA SANTRI SAAT INI (jika tagihan awal mereka > nominal baru, akan disesuaikan menjadi nominal baru. Jika lebih kecil/sudah lunas, tidak berubah).',
+            text: 'Ini akan menyimpan pengaturan, dan menyinkronkan nominal ke SELURUH DATA SANTRI AKTIF. Semua tagihan akan langsung diubah ke nominal baru tanpa terkecuali.',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#16a34a',
@@ -258,26 +255,36 @@ function JenisTagihan() {
 
         if (result.isConfirmed) {
             try {
-                const res = await authFetch(`${API_BASE}/santri/bulk-tagihan`, {
+                // 1. Save settings to database
+                const saveRes = await authFetch(`${API_BASE}/settings/tagihan`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ settings: tagihanSettings })
+                });
+                const saveJson = await saveRes.json();
+                if (!saveJson.success) {
+                    Swal.fire('Gagal', saveJson.message || 'Gagal menyimpan pengaturan', 'error');
+                    return;
+                }
+
+                // 2. Sync nominal to all santri
+                const syncRes = await authFetch(`${API_BASE}/santri/bulk-tagihan`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ settings: tagihanSettings })
                 });
 
-                const json = await res.json();
-                if (json.success) {
-                    localStorage.setItem('tagihan_settings', JSON.stringify(tagihanSettings));
-                    setSaved(true);
+                const syncJson = await syncRes.json();
+                if (syncJson.success) {
                     Swal.fire({ 
                         icon: 'success', 
                         title: 'Berhasil!', 
-                        text: 'Nominal berhasil dijadwalkan dan disinkronisasi dengan Data Induk.', 
+                        text: 'Nominal berhasil disimpan dan disinkronisasi ke seluruh Data Santri Aktif.', 
                         timer: 2000, 
                         showConfirmButton: false 
                     });
-                    setTimeout(() => setSaved(false), 2000);
                 } else {
-                    Swal.fire('Gagal', json.message || 'Gagal menyinkronisasi tagihan', 'error');
+                    Swal.fire('Gagal', syncJson.message || 'Gagal menyinkronisasi tagihan', 'error');
                 }
             } catch (error) {
                 Swal.fire('Error', 'Terjadi kesalahan koneksi ke server', 'error');
@@ -285,13 +292,21 @@ function JenisTagihan() {
         }
     };
 
+    if (loading) {
+        return (
+            <div className="bg-white rounded-lg shadow p-6 text-center text-gray-400">
+                <i className="fas fa-spinner fa-spin mr-2"></i>Memuat pengaturan tagihan...
+            </div>
+        );
+    }
+
     return (
         <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-sm font-semibold text-gray-800 mb-4"><i className="fas fa-list mr-2 text-green-600"></i>Jenis & Nominal Default Tagihan</h2>
             <p className="text-xs text-gray-500 mb-4">Daftar jenis tagihan beserta nominal default yang akan digunakan sebagai basis tagihan bagi semua santri.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 {defaultTagihan.map(item => {
-                    const setting = tagihanSettings[item.key] || { aktif: true, nominal: '' };
+                    const setting = { aktif: true, nominal: '', ...tagihanSettings[item.key] };
                     return (
                         <div key={item.key} className={`flex flex-col gap-3 p-4 rounded-lg border transition-colors ${setting.aktif ? 'bg-gray-50 border-gray-200 hover:border-green-300' : 'bg-gray-100 border-gray-200 opacity-60'}`}>
                             <div className="flex items-center justify-between">

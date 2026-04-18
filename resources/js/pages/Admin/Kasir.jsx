@@ -20,9 +20,26 @@ function Kasir() {
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [activeCards, setActiveCards] = useState({});
     const [cardValues, setCardValues] = useState({});
+    const [receiptData, setReceiptData] = useState(null);
     
-    // Load tagihan settings from localStorage
-    const tagihanSettings = JSON.parse(localStorage.getItem('tagihan_settings') || '{}');
+    // Load tagihan settings from API instead of localStorage
+    const [tagihanSettings, setTagihanSettings] = useState({});
+    const [settingsLoading, setSettingsLoading] = useState(true);
+    
+    useEffect(() => {
+        const loadSettings = async () => {
+            try {
+                const res = await authFetch(`${API_BASE}/settings/tagihan`);
+                const json = await res.json();
+                if (json.success && json.data) {
+                    setTagihanSettings(json.data);
+                }
+            } catch (e) { console.error('Failed to load tagihan settings:', e); }
+            finally { setSettingsLoading(false); }
+        };
+        loadSettings();
+    }, []);
+    
     const showSyahriyah = !tagihanSettings['syahriyah'] || tagihanSettings['syahriyah'].aktif !== false;
     const [metode, setMetode] = useState('Cash');
     const [showShortcuts, setShowShortcuts] = useState(false);
@@ -76,12 +93,24 @@ function Kasir() {
         } catch (e) { console.error(e); }
     };
 
-    const selectSantri = (s) => {
-        setSelectedSantri(s);
+    const selectSantri = async (s) => {
         setQuery(s.nama);
         setShowSuggestions(false);
         setActiveCards({});
         setCardValues({});
+        // Fetch full detail with paid months
+        try {
+            const res = await authFetch(`${API_BASE}/kasir/detail/${s.id}`);
+            const json = await res.json();
+            if (json.success && json.data) {
+                setSelectedSantri(json.data);
+            } else {
+                setSelectedSantri(s);
+            }
+        } catch (e) {
+            console.error('Failed to load santri detail:', e);
+            setSelectedSantri(s);
+        }
     };
 
     const clearSelection = () => {
@@ -166,17 +195,41 @@ function Kasir() {
             });
             const json = await res.json();
             if (json.success) {
-                Swal.fire({
-                    title: '<i class="fas fa-check-circle text-green-500"></i> Transaksi Berhasil!',
-                    html: `<div class="text-left p-4 bg-gray-50 rounded-lg mt-3">
-                        <div class="flex justify-between py-2 border-b"><span class="text-gray-600">Santri:</span><span class="font-semibold">${selectedSantri.nama}</span></div>
-                        <div class="flex justify-between py-2 border-b"><span class="text-gray-600">Lembaga:</span><span class="font-semibold">${selectedSantri.lembaga}</span></div>
-                        <div class="flex justify-between py-2 border-b"><span class="text-gray-600">Metode:</span><span class="font-semibold">${metode}</span></div>
-                        <div class="flex justify-between py-2 text-lg"><span class="text-gray-600 font-semibold">Total:</span><span class="font-bold text-green-600">${formatIDR(total)}</span></div>
-                    </div><p class="text-sm text-gray-500 mt-3"><i class="fas fa-sync-alt mr-1"></i> Data Induk & Riwayat telah diperbarui.</p>`,
-                    icon: 'success', confirmButtonColor: '#16a34a', confirmButtonText: '<i class="fas fa-check mr-1"></i> Selesai'
-                });
-                clearSelection();
+                // Prepare receipt data
+                const profil = JSON.parse(localStorage.getItem('profil_pondok') || '{}');
+                const receipt = {
+                    namaPondok: profil.nama_pondok || 'Pondok Pesantren Nurul Huda An-Najjah',
+                    alamat: profil.alamat || '',
+                    telepon: profil.telepon || '',
+                    santriNama: selectedSantri.nama,
+                    santriKelas: selectedSantri.kelas || '-',
+                    santriLembaga: selectedSantri.lembaga || '-',
+                    items: summaryItems.map(i => ({ label: i.label, nominal: i.nominal })),
+                    total,
+                    metode,
+                    tanggal: new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }),
+                    waktu: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+                    noTransaksi: json.data?.id ? `TRX-${String(json.data.id).padStart(6, '0')}` : '-',
+                    kasir: json.data?.santri?.nama || 'Admin',
+                };
+                setReceiptData(receipt);
+
+                // Auto print after short delay to let React render the receipt
+                setTimeout(() => {
+                    window.print();
+                    
+                    Swal.fire({
+                        title: '<i class="fas fa-check-circle text-green-500"></i> Transaksi Berhasil!',
+                        html: `<div class="text-left p-4 bg-gray-50 rounded-lg mt-3">
+                            <div class="flex justify-between py-2 border-b"><span class="text-gray-600">Santri:</span><span class="font-semibold">${selectedSantri.nama}</span></div>
+                            <div class="flex justify-between py-2 border-b"><span class="text-gray-600">Lembaga:</span><span class="font-semibold">${selectedSantri.lembaga}</span></div>
+                            <div class="flex justify-between py-2 border-b"><span class="text-gray-600">Metode:</span><span class="font-semibold">${metode}</span></div>
+                            <div class="flex justify-between py-2 text-lg"><span class="text-gray-600 font-semibold">Total:</span><span class="font-bold text-green-600">${formatIDR(total)}</span></div>
+                        </div><p class="text-sm text-gray-500 mt-3"><i class="fas fa-sync-alt mr-1"></i> Data Induk & Riwayat telah diperbarui.</p>`,
+                        icon: 'success', confirmButtonColor: '#16a34a', confirmButtonText: '<i class="fas fa-check mr-1"></i> Selesai'
+                    });
+                    clearSelection();
+                }, 300);
             } else {
                 Swal.fire({ title: 'Gagal', text: json.message || 'Transaksi gagal', icon: 'error' });
             }
@@ -215,20 +268,25 @@ function Kasir() {
 
     const renderMonthCard = (produkKey, monthIdx) => {
         const noSantri = !selectedSantri;
-        const lunas = !noSantri && isLunas(produkKey);
-        const perBulan = (tagihanSettings[produkKey] && tagihanSettings[produkKey].nominal) ? Number(tagihanSettings[produkKey].nominal) : (produkKey === 'syahriyah' ? 400000 : 0);
+        const perBulan = (tagihanSettings[produkKey] && tagihanSettings[produkKey].nominal) ? Number(tagihanSettings[produkKey].nominal) : (produkKey === 'syahriyah' ? 200000 : 0);
+        
+        // Check if this specific month is paid from API data
+        const bulanData = selectedSantri?.syahriyah_bulan?.[monthIdx];
+        const monthLunas = !noSantri && bulanData?.lunas === true;
+        const monthSisa = bulanData ? bulanData.sisa : perBulan;
+        
         const cardKey = `${produkKey}-${monthIdx}`;
         const active = activeCards[cardKey];
-        const disabled = noSantri || lunas;
+        const disabled = noSantri || monthLunas;
 
         return (
             <div key={cardKey}
                 className={`produk-card month-card flex flex-col items-center border rounded-lg p-2 cursor-pointer transition-all text-center relative
                     ${disabled ? 'bg-gray-100 border-gray-300 opacity-60' : active ? 'bg-[#dcfce7] border-[#16a34a] shadow-[0_0_0_2px_rgba(22,163,74,0.3)]' : 'bg-white border-gray-200 hover:border-green-400 hover:bg-green-50'}`}
-                onClick={() => noSantri ? toggleCard(cardKey) : !lunas && toggleCard(cardKey)}>
+                onClick={() => noSantri ? toggleCard(cardKey) : !monthLunas && toggleCard(cardKey)}>
                 <span className="text-xs font-medium mb-1">{bulan[monthIdx]}</span>
-                <div className={`text-xs font-semibold ${noSantri ? 'text-gray-400' : lunas ? 'text-green-600' : 'text-red-600'}`}>
-                    {noSantri ? '-' : lunas ? 'LUNAS' : formatIDR(perBulan)}
+                <div className={`text-xs font-semibold ${noSantri ? 'text-gray-400' : monthLunas ? 'text-green-600' : 'text-red-600'}`}>
+                    {noSantri ? '-' : monthLunas ? 'LUNAS' : formatIDR(monthSisa)}
                 </div>
                 <input type="text" inputMode="numeric"
                     className="w-full text-center rounded px-1 py-1 bg-gray-100 border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-green-500 mt-1"
@@ -237,7 +295,7 @@ function Kasir() {
                     onClick={e => { e.stopPropagation(); if (noSantri) { Swal.fire({ title: 'Pilih Santri', text: 'Pilih nama santri terlebih dahulu.', icon: 'warning', confirmButtonColor: '#16a34a' }); } }}
                     onChange={e => updateCardValue(cardKey, e.target.value)}
                 />
-                {lunas && <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-[15deg] bg-[#16a34a] text-white text-[0.6rem] font-bold px-2 py-0.5 rounded">LUNAS</span>}
+                {monthLunas && <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-[15deg] bg-[#16a34a] text-white text-[0.6rem] font-bold px-2 py-0.5 rounded">LUNAS</span>}
             </div>
         );
     };
@@ -376,6 +434,49 @@ function Kasir() {
                         <div className="flex justify-between"><span>Bayar</span><kbd className="bg-gray-700 px-1.5 py-0.5 rounded text-[10px]">Ctrl ↵</kbd></div>
                         <div className="flex justify-between"><span>Toggle metode</span><kbd className="bg-gray-700 px-1.5 py-0.5 rounded text-[10px]">Ctrl M</kbd></div>
                         <div className="flex justify-between"><span>Show / hide</span><kbd className="bg-gray-700 px-1.5 py-0.5 rounded text-[10px]">?</kbd></div>
+                    </div>
+                </div>
+            )}
+
+            {/* Hidden Thermal Receipt - only visible during print */}
+            {receiptData && (
+                <div id="thermal-receipt" className="thermal-receipt">
+                    <div className="receipt-header">
+                        <div className="receipt-title">{receiptData.namaPondok}</div>
+                        {receiptData.alamat && <div className="receipt-subtitle">{receiptData.alamat}</div>}
+                        {receiptData.telepon && <div className="receipt-subtitle">Telp: {receiptData.telepon}</div>}
+                    </div>
+                    <div className="receipt-divider">================================</div>
+                    <div className="receipt-info">
+                        <div className="receipt-row"><span>No</span><span>{receiptData.noTransaksi}</span></div>
+                        <div className="receipt-row"><span>Tgl</span><span>{receiptData.tanggal}</span></div>
+                        <div className="receipt-row"><span>Jam</span><span>{receiptData.waktu}</span></div>
+                    </div>
+                    <div className="receipt-divider">--------------------------------</div>
+                    <div className="receipt-info">
+                        <div className="receipt-row"><span>Santri</span><span>{receiptData.santriNama}</span></div>
+                        <div className="receipt-row"><span>Kelas</span><span>{receiptData.santriKelas}</span></div>
+                        <div className="receipt-row"><span>Lembaga</span><span>{receiptData.santriLembaga}</span></div>
+                    </div>
+                    <div className="receipt-divider">================================</div>
+                    <div className="receipt-items">
+                        {receiptData.items.map((item, idx) => (
+                            <div key={idx} className="receipt-item">
+                                <div className="receipt-item-name">{item.label}</div>
+                                <div className="receipt-item-price">{formatIDR(item.nominal)}</div>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="receipt-divider">================================</div>
+                    <div className="receipt-total">
+                        <div className="receipt-row"><span><strong>TOTAL</strong></span><span><strong>{formatIDR(receiptData.total)}</strong></span></div>
+                        <div className="receipt-row"><span>Metode</span><span>{receiptData.metode}</span></div>
+                    </div>
+                    <div className="receipt-divider">--------------------------------</div>
+                    <div className="receipt-footer">
+                        <div>Terima kasih atas pembayarannya</div>
+                        <div>Semoga Allah membalas kebaikan Anda</div>
+                        <div style={{marginTop: '4px', fontSize: '8px'}}>*** Struk ini adalah bukti pembayaran sah ***</div>
                     </div>
                 </div>
             )}

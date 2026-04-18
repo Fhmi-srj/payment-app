@@ -26,6 +26,46 @@ class KasirController extends Controller
         ]);
     }
 
+    /**
+     * Get santri detail with monthly payment status for Kasir
+     */
+    public function detail(Santri $santri)
+    {
+        $syahriyahSetting = \App\Models\TagihanSetting::where('key', 'syahriyah')->first();
+        $nominalPerBulan = $syahriyahSetting ? $syahriyahSetting->nominal : 200000;
+
+        // Get paid months
+        $paidMonths = DB::table('transaksi_items')
+            ->join('transaksis', 'transaksis.id', '=', 'transaksi_items.transaksi_id')
+            ->where('transaksis.santri_id', $santri->id)
+            ->where('transaksi_items.nama', 'like', '%Syahriyah%')
+            ->whereNotNull('transaksi_items.bulan')
+            ->select('transaksi_items.bulan', DB::raw('SUM(transaksi_items.nominal) as total_paid'))
+            ->groupBy('transaksi_items.bulan')
+            ->get()
+            ->keyBy('bulan');
+
+        $bulanDetail = [];
+        for ($m = 0; $m < 12; $m++) {
+            $paid = isset($paidMonths[$m]) ? (int) $paidMonths[$m]->total_paid : 0;
+            $sisa = max(0, $nominalPerBulan - $paid);
+            $bulanDetail[$m] = [
+                'paid' => $paid,
+                'sisa' => $sisa,
+                'lunas' => $sisa <= 0,
+            ];
+        }
+
+        $data = $santri->toArray();
+        $data['syahriyah_bulan'] = $bulanDetail;
+        $data['syahriyah_nominal_per_bulan'] = $nominalPerBulan;
+
+        return response()->json([
+            'success' => true,
+            'data' => $data,
+        ]);
+    }
+
     public function bayar(Request $request)
     {
         $request->validate([
@@ -79,7 +119,7 @@ class KasirController extends Controller
                 }
 
                 // For bulanan (Syahriyah monthly), reduce from syahriyah
-                if (str_contains($itemName, 'Syahriyah -')) {
+                if ($itemName !== 'Syahriyah' && str_starts_with($itemName, 'Syahriyah')) {
                     $santri->syahriyah = max(0, $santri->syahriyah - $item['nominal']);
                 }
             }

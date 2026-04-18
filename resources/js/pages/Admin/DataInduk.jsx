@@ -6,6 +6,7 @@ import Pagination, { ITEMS_PER_PAGE_DEFAULT } from '../../components/Pagination'
 
 const moneyFields = ['daftar_ulang', 'syahriyah', 'haflah', 'seragam', 'study_tour', 'kartu_santri'];
 const moneyLabels = { daftar_ulang: 'Daftar Ulang', syahriyah: 'Syahriyah', haflah: 'Haflah', seragam: 'Seragam', study_tour: 'Study Tour', kartu_santri: 'Kartu Santri' };
+const BULAN_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
 
 
 
@@ -27,6 +28,7 @@ function DataInduk() {
     const [showKelasFilter, setShowKelasFilter] = useState(false);
     const [showJkFilter, setShowJkFilter] = useState(false);
     const [expandedRows, setExpandedRows] = useState(new Set());
+    const [expandSyahriyahCols, setExpandSyahriyahCols] = useState(false);
     const [modalOpen, setModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState('add');
     const [editItem, setEditItem] = useState(null);
@@ -47,12 +49,13 @@ function DataInduk() {
             if (filterJenisKelamin) params.append('jenis_kelamin', filterJenisKelamin);
             if (filterStatus) params.append('status', filterStatus);
             if (sortCol) { params.append('sort_by', sortCol); params.append('sort_dir', sortDir); }
+            if (expandSyahriyahCols) params.append('include_syahriyah_detail', '1');
             const res = await authFetch(`${API_BASE}/santri?${params}`);
             const json = await res.json();
             setData(json.data || []);
         } catch (e) { console.error(e); }
         finally { setLoading(false); }
-    }, [search, filterLembaga, filterYayasan, filterKelas, filterJenisKelamin, filterStatus, sortCol, sortDir]);
+    }, [search, filterLembaga, filterYayasan, filterKelas, filterJenisKelamin, filterStatus, sortCol, sortDir, expandSyahriyahCols]);
 
     useEffect(() => { loadData(); }, [loadData]);
 
@@ -303,9 +306,29 @@ function DataInduk() {
                                             </div>
                                         </th>
                                         {moneyFields.map(f => (
-                                            <th key={f} className="sortable select-none cursor-pointer px-3 py-3 whitespace-nowrap" onClick={() => handleSort(f)}>
-                                                <div className="flex items-center"><span>{moneyLabels[f]}</span><i className={`${sortIcon(f)} text-green-700 ml-1`}></i></div>
-                                            </th>
+                                            <React.Fragment key={f}>
+                                                <th className="sortable select-none cursor-pointer px-3 py-3 whitespace-nowrap" onClick={() => f === 'syahriyah' ? undefined : handleSort(f)}>
+                                                    <div className="flex items-center">
+                                                        <span>{moneyLabels[f]}</span>
+                                                        {f !== 'syahriyah' && <i className={`${sortIcon(f)} text-green-700 ml-1`}></i>}
+                                                        {f === 'syahriyah' && (
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); setExpandSyahriyahCols(!expandSyahriyahCols); }}
+                                                                className={`ml-2 px-1.5 py-0.5 rounded text-[10px] font-medium transition-all ${expandSyahriyahCols ? 'bg-green-600 text-white' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}
+                                                                title={expandSyahriyahCols ? 'Tutup detail bulan' : 'Lihat detail per bulan'}
+                                                            >
+                                                                <i className={`fas fa-chevron-${expandSyahriyahCols ? 'left' : 'right'} text-[8px] mr-0.5`}></i>
+                                                                {expandSyahriyahCols ? 'Tutup' : 'Detail'}
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </th>
+                                                {f === 'syahriyah' && expandSyahriyahCols && BULAN_NAMES.map((bln, bi) => (
+                                                    <th key={`syh-${bi}`} className="px-2 py-3 whitespace-nowrap text-center select-none" style={{ fontSize: '10px', minWidth: '55px' }}>
+                                                        {bln}
+                                                    </th>
+                                                ))}
+                                            </React.Fragment>
                                         ))}
                                         <th className="sortable select-none cursor-pointer px-3 py-3 whitespace-nowrap" onClick={() => handleSort('alamat')}><div className="flex items-center"><span>Alamat</span><i className={`${sortIcon('alamat')} text-green-700 ml-1`}></i></div></th>
                                         <th className="sortable select-none cursor-pointer px-3 py-3 whitespace-nowrap" onClick={() => handleSort('ttl')}><div className="flex items-center"><span>TTL</span><i className={`${sortIcon('ttl')} text-green-700 ml-1`}></i></div></th>
@@ -363,7 +386,18 @@ function DataInduk() {
                                                 <td className="px-3 py-3 align-middle select-none whitespace-nowrap">{item.kelas || '-'}</td>
                                                 <td className="px-3 py-3 align-middle select-none whitespace-nowrap">{item.jenis_kelamin || '-'}</td>
                                                 {moneyFields.map(f => (
-                                                    <td key={f} className="px-3 py-3 align-middle select-none text-right font-mono text-[11px] whitespace-nowrap">{formatRupiah(item[f])}</td>
+                                                    <React.Fragment key={f}>
+                                                        <td className="px-3 py-3 align-middle select-none text-right font-mono text-[11px] whitespace-nowrap">{formatRupiah(item[f])}</td>
+                                                        {f === 'syahriyah' && expandSyahriyahCols && BULAN_NAMES.map((_, bi) => {
+                                                            const bulanData = item.syahriyah_bulan?.[bi];
+                                                            const isLunas = bulanData?.lunas;
+                                                            return (
+                                                                <td key={`syh-${bi}`} className={`px-2 py-3 align-middle text-center text-[10px] font-medium whitespace-nowrap ${isLunas ? 'text-green-600' : 'text-red-500'}`}>
+                                                                    {bulanData ? (isLunas ? '✓' : formatRupiah(bulanData.sisa)) : '-'}
+                                                                </td>
+                                                            );
+                                                        })}
+                                                    </React.Fragment>
                                                 ))}
                                                 <td className="px-3 py-3 align-middle select-none" title={item.alamat || ''}>
                                                     <div className="max-w-[150px] truncate">{item.alamat || '-'}</div>

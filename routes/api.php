@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\CetakController;
 use App\Http\Controllers\Api\WaliController;
 use App\Http\Controllers\Api\TahunAjaranController;
 use App\Http\Controllers\Api\ActivityLogController;
+use App\Http\Controllers\Api\SettingController;
 
 // Public Auth Routes
 Route::post('auth/login', [AuthController::class, 'login']);
@@ -50,6 +51,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Kasir
     Route::get('kasir/search', [KasirController::class, 'search']);
+    Route::get('kasir/detail/{santri}', [KasirController::class, 'detail']);
     Route::post('kasir/bayar', [KasirController::class, 'bayar']);
 
     // Riwayat
@@ -82,4 +84,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Audit Log
     Route::get('audit-log', [ActivityLogController::class, 'index']);
     Route::get('audit-log/actions', [ActivityLogController::class, 'actions']);
+
+    // Settings
+    Route::get('settings/tagihan', [SettingController::class, 'tagihanIndex']);
+    Route::post('settings/tagihan', [SettingController::class, 'tagihanStore']);
 });

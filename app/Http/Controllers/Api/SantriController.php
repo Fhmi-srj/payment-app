@@ -24,6 +24,18 @@ class SantriController extends Controller
             $query->where('lembaga', $request->lembaga);
         }
 
+        if ($request->filled('yayasan')) {
+            $query->where('yayasan', $request->yayasan);
+        }
+
+        if ($request->filled('kelas')) {
+            $query->where('kelas', $request->kelas);
+        }
+
+        if ($request->filled('jenis_kelamin')) {
+            $query->whereRaw('LOWER(jenis_kelamin) = ?', [strtolower($request->jenis_kelamin)]);
+        }
+
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
@@ -36,6 +48,45 @@ class SantriController extends Controller
         }
 
         $santris = $query->get();
+
+        // If requested, include syahriyah monthly detail
+        if ($request->filled('include_syahriyah_detail')) {
+            $syahriyahSetting = \App\Models\TagihanSetting::where('key', 'syahriyah')->first();
+            $nominalPerBulan = $syahriyahSetting ? $syahriyahSetting->nominal : 400000;
+
+            $santriIds = $santris->pluck('id');
+            $paidMonths = \Illuminate\Support\Facades\DB::table('transaksi_items')
+                ->join('transaksis', 'transaksis.id', '=', 'transaksi_items.transaksi_id')
+                ->whereIn('transaksis.santri_id', $santriIds)
+                ->where('transaksi_items.nama', 'like', '%Syahriyah%')
+                ->whereNotNull('transaksi_items.bulan')
+                ->select('transaksis.santri_id', 'transaksi_items.bulan', \Illuminate\Support\Facades\DB::raw('SUM(transaksi_items.nominal) as total_paid'))
+                ->groupBy('transaksis.santri_id', 'transaksi_items.bulan')
+                ->get();
+
+            $paidMap = [];
+            foreach ($paidMonths as $pm) {
+                $paidMap[$pm->santri_id][$pm->bulan] = (int) $pm->total_paid;
+            }
+
+            $santris = $santris->map(function ($s) use ($paidMap, $nominalPerBulan) {
+                $arr = $s->toArray();
+                $paid = $paidMap[$s->id] ?? [];
+                $bulanDetail = [];
+                for ($m = 0; $m < 12; $m++) {
+                    $paidAmount = $paid[$m] ?? 0;
+                    $sisa = max(0, $nominalPerBulan - $paidAmount);
+                    $bulanDetail[$m] = [
+                        'paid' => $paidAmount,
+                        'sisa' => $sisa,
+                        'lunas' => $sisa <= 0,
+                    ];
+                }
+                $arr['syahriyah_bulan'] = $bulanDetail;
+                $arr['syahriyah_nominal_per_bulan'] = $nominalPerBulan;
+                return $arr;
+            });
+        }
 
         return response()->json([
             'success' => true,
@@ -185,23 +236,39 @@ class SantriController extends Controller
             $aktif = filter_var($data['aktif'] ?? true, FILTER_VALIDATE_BOOLEAN);
 
             $validFields = ['daftar_ulang', 'syahriyah', 'haflah', 'seragam', 'study_tour', 'kartu_santri'];
+            $prefixMap = [
+                'daftar_ulang' => 'Daftar Ulang',
+                'syahriyah' => 'Syahriyah',
+                'haflah' => 'Haflah',
+                'seragam' => 'Seragam',
+                'study_tour' => 'Study Tour',
+                'kartu_santri' => 'Kartu Santri',
+            ];
             
+            // Subquery to calculate how much has already been paid for this specific category
+            $prefix = $prefixMap[$key] ?? $key;
+            $subquery = "(SELECT COALESCE(SUM(ti.nominal), 0) FROM transaksi_items ti INNER JOIN transaksis t ON t.id = ti.transaksi_id WHERE t.santri_id = santris.id AND ti.nama LIKE '{$prefix}%')";
+
             if ($key === 'haflah' && $aktif) {
                 $nominalWisudawan = intval($data['nominal_wisudawan'] ?? 0);
                 $nominalNonWisudawan = intval($data['nominal_non_wisudawan'] ?? 0);
                 
                 if ($nominalWisudawan >= 0) {
-                    $count = Santri::where('kelas', '3')->where('haflah', '>', $nominalWisudawan)->update(['haflah' => $nominalWisudawan]);
+                    $count = Santri::where('status', 'AKTIF')->where('kelas', '3')
+                        ->update(['haflah' => \Illuminate\Support\Facades\DB::raw("GREATEST(0, $nominalWisudawan - $subquery)")]);
                     $updatedCount += $count;
                 }
                 if ($nominalNonWisudawan >= 0) {
-                    $count = Santri::whereIn('kelas', ['1', '2'])->where('haflah', '>', $nominalNonWisudawan)->update(['haflah' => $nominalNonWisudawan]);
+                    $count = Santri::where('status', 'AKTIF')->whereIn('kelas', ['1', '2'])
+                        ->update(['haflah' => \Illuminate\Support\Facades\DB::raw("GREATEST(0, $nominalNonWisudawan - $subquery)")]);
                     $updatedCount += $count;
                 }
             } else if (in_array($key, $validFields) && $aktif && $nominal >= 0) {
-                // Update tagihan yang lebih besar dari nominal baru
-                // "jika tagihan awal kurang dari nominal baru maka tidak berubah"
-                $count = Santri::where($key, '>', $nominal)->update([$key => $nominal]);
+                // Untuk syahriyah: nominal di settings = per bulan, tapi field di santri = total tahunan
+                $nominalToSet = ($key === 'syahriyah') ? $nominal * 12 : $nominal;
+                // Update SEMUA santri aktif ke nominal baru, tapi KONTRAKAN DENGAN tagihan yang sudah dibayar!
+                $count = Santri::where('status', 'AKTIF')
+                    ->update([$key => \Illuminate\Support\Facades\DB::raw("GREATEST(0, $nominalToSet - $subquery)")]);
                 $updatedCount += $count;
             }
         }

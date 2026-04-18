@@ -65,17 +65,56 @@ class TagihanController extends Controller
             'kartu_santri' => 'Kartu Santri',
         ];
 
+        // Get nominal syahriyah per bulan from settings
+        $syahriyahSetting = \App\Models\TagihanSetting::where('key', 'syahriyah')->first();
+        $nominalPerBulan = $syahriyahSetting ? $syahriyahSetting->nominal : 400000;
+
+        // Get paid months for this santri
+        $paidMonths = DB::table('transaksi_items')
+            ->join('transaksis', 'transaksis.id', '=', 'transaksi_items.transaksi_id')
+            ->where('transaksis.santri_id', $santri->id)
+            ->where('transaksi_items.nama', 'like', '%Syahriyah%')
+            ->whereNotNull('transaksi_items.bulan')
+            ->select('transaksi_items.bulan', DB::raw('SUM(transaksi_items.nominal) as total_paid'))
+            ->groupBy('transaksi_items.bulan')
+            ->get()
+            ->keyBy('bulan');
+
+        $bulanNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
         $breakdown = [];
         $totalTagihan = 0;
         foreach ($moneyFields as $field => $label) {
             $sisa = $santri->$field;
             $totalTagihan += $sisa;
-            $breakdown[] = [
+            
+            $item = [
                 'jenis' => $label,
                 'field' => $field,
                 'sisa' => $sisa,
                 'lunas' => $sisa <= 0,
             ];
+
+            // Add monthly detail for syahriyah
+            if ($field === 'syahriyah') {
+                $bulanDetail = [];
+                for ($m = 0; $m < 12; $m++) {
+                    $paid = isset($paidMonths[$m]) ? (int) $paidMonths[$m]->total_paid : 0;
+                    $sisaBulan = max(0, $nominalPerBulan - $paid);
+                    $bulanDetail[] = [
+                        'bulan' => $m,
+                        'nama' => $bulanNames[$m],
+                        'nominal' => $nominalPerBulan,
+                        'paid' => $paid,
+                        'sisa' => $sisaBulan,
+                        'lunas' => $sisaBulan <= 0,
+                    ];
+                }
+                $item['bulan_detail'] = $bulanDetail;
+                $item['nominal_per_bulan'] = $nominalPerBulan;
+            }
+
+            $breakdown[] = $item;
         }
 
         // Get payment history for this santri
@@ -202,7 +241,9 @@ class TagihanController extends Controller
             $paidMap[$pm->santri_id][$pm->bulan] = (int) $pm->total_paid;
         }
 
-        $perBulan = $request->filled('nominal_syahriyah') ? (int) $request->nominal_syahriyah : 400000;
+        // Get nominal per bulan from settings database
+        $syahriyahSetting = \App\Models\TagihanSetting::where('key', 'syahriyah')->first();
+        $perBulan = $syahriyahSetting ? $syahriyahSetting->nominal : ($request->filled('nominal_syahriyah') ? (int) $request->nominal_syahriyah : 400000);
 
         $reportData = $santris->map(function ($s) use ($paidMap, $perBulan) {
             $months = [];
